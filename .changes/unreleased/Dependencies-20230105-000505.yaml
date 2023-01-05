@@ -1,0 +1,6 @@
+kind: "Dependencies"
+body: "Update agate requirement from <1.7.1,>=1.6 to >=1.6,<1.7.2 in /core"
+time: 2023-01-05T00:05:05.00000Z
+custom:
+  Author: dependabot[bot]
+  PR: 6522
