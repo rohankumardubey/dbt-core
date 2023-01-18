@@ -167,6 +167,7 @@ jobs:
       DBT_TEST_USER_1: dbt_test_user_1
       DBT_TEST_USER_2: dbt_test_user_2
       DBT_TEST_USER_3: dbt_test_user_3
+      COVERAGE_FILE: ".coverage.${{ matrix.split-group }}"
 
     steps:
       - name: Check out the repository
@@ -199,9 +200,8 @@ jobs:
       - name: Run tests
         run: |
           tox
-          cat .coverage
         env:
-          PYTEST_ADDOPTS: ${{ format('-v --color=yes -n4 --csv integration_results.csv --splits {0} --group {1}', env.PYTHON_TEST_WORKERS, matrix.split-group) }}
+          PYTEST_ADDOPTS: ${{ format('-v --color=yes -n4 --csv integration_results_{0}.csv --splits {1} --group {2}', matrix.split-group, env.PYTHON_TEST_WORKERS, matrix.split-group) }}
 
       - name: Get current date
         if: always()
@@ -217,14 +217,14 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: integration_results_${{ matrix.python-version }}_${{ matrix.os }}_${{ matrix.split-group }}
-          path: integration_results.csv
+          name: integration_results_${{ matrix.python-version }}_${{ matrix.os }}
+          path: integration_results_${{ matrix.split-group }}.csv
 
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: integration_coverage_${{ matrix.python-version }}_${{ matrix.os }}_${{ matrix.split-group }}
-          path: .coverage
+          name: integration_coverage_${{ matrix.python-version }}_${{ matrix.os }}
+          path: .coverage.${{ matrix.split-group }}
 
   build:
     name: build packages
