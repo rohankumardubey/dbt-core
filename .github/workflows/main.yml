@@ -148,7 +148,7 @@ jobs:
           echo "include=${INCLUDE_GROUPS}" >> $GITHUB_OUTPUT
 
   integration:
-    name: integration test / python ${{ matrix.python-version }} / ${{ matrix.os }} / group ${{ matrix.split-group }}
+    name: (${{ matrix.split-group }}) integration test / python ${{ matrix.python-version }} / ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
@@ -167,7 +167,6 @@ jobs:
       DBT_TEST_USER_1: dbt_test_user_1
       DBT_TEST_USER_2: dbt_test_user_2
       DBT_TEST_USER_3: dbt_test_user_3
-      COVERAGE_FILE: ".coverage.${{ matrix.split-group }}"
 
     steps:
       - name: Check out the repository
@@ -200,9 +199,9 @@ jobs:
       - name: Run tests
         run: |
           tox
-          find .coverage*
+          cat .coverage
         env:
-          PYTEST_ADDOPTS: ${{ format('-v --color=yes -n4 --csv integration_results_{0}.csv --splits {1} --group {2}', matrix.split-group, env.PYTHON_TEST_WORKERS, matrix.split-group) }}
+          PYTEST_ADDOPTS: ${{ format('-v --color=yes -n4 --csv integration_results.csv --splits {0} --group {1}', env.PYTHON_TEST_WORKERS, matrix.split-group) }}
 
       - name: Get current date
         if: always()
@@ -218,79 +217,14 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: integration_results_${{ matrix.python-version }}_${{ matrix.os }}
-          path: integration_results_${{ matrix.split-group }}.csv
+          name: integration_results_${{ matrix.python-version }}_${{ matrix.os }}_${{ matrix.split-group }}
+          path: integration_results.csv
 
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: integration_coverage_${{ matrix.python-version }}_${{ matrix.os }}
-          path: .coverage.${{ matrix.split-group }}
-
-  integration-results:
-    runs-on: ubuntu-20.04
-
-    needs:
-      - integration-metadata
-      - integration
-    steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4.3.0
-        with:
-          python-version: "3.8"
-
-      - name: Download integration result artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_results_3.8_ubuntu-20.04
-          path: ./integration_results
-
-      - name: Generate combined integration result
-        run: head -n 1 $(ls integration_results/*.csv | head -1) > combined.csv && tail -n+2 -q integration_results/*.csv >> combined.csv
-
-      - name: Store combined integration results
-        uses: actions/upload-artifact@v3
-        with:
-          name: integration_results_3.8_ubuntu-20.04.csv
-          path: combined.csv
-
-  integration-coverage-results:
-    runs-on: ubuntu-20.04
-
-    needs:
-      - integration-metadata
-      - integration
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v4.3.0
-        with:
-          python-version: "3.8"
-
-      - name: Download integration result artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: integration_coverage_3.8_ubuntu-20.04
-          path: ./coverage
-
-      - name: Generate combined integration coverage result
-        run: |
-          pip3 install coverage==7.0.3
-          COVERAGE_FILES=$(find coverage/.coverage.* | sed -z 's/\n/ /g')
-          echo "combining coverage files: $COVERAGE_FILES"
-          coverage combine $COVERAGE_FILES
-          coverage report
-
-      - name: Generate HTML report
-        run: coverage html
-
-      - name: Store HTML coverage files
-        uses: actions/upload-artifact@v3
-        with:
-          name: html-coverage
-          path: htmlcov/index.html
+          name: integration_coverage_${{ matrix.python-version }}_${{ matrix.os }}_${{ matrix.split-group }}
+          path: .coverage
 
   build:
     name: build packages
