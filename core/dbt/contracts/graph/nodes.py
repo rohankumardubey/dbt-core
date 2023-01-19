@@ -478,6 +478,7 @@ class SeedNode(ParsedNode):  # No SQLDefaults!
     # seeds need the root_path because the contents are not loaded initially
     # and we need the root_path to load the seed later
     root_path: Optional[str] = None
+    compiled_code = None
 
     def same_seeds(self, other: "SeedNode") -> bool:
         # for seeds, we check the hashes. If the hashes are different types,

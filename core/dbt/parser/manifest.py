@@ -786,7 +786,7 @@ class ManifestLoader:
         root_config: RuntimeConfig,
         macro_hook: Callable[[Manifest], Any],
         base_macros_only=False,
-    ) -> Manifest:
+    ) -> MacroManifest:
         with PARSING_STATE:
             # base_only/base_macros_only: for testing only,
             # allows loading macros without running 'dbt deps' first
