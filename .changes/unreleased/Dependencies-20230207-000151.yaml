@@ -1,0 +1,6 @@
+kind: "Dependencies"
+body: "Bump mashumaro[msgpack] from 3.3.1 to 3.4 in /core"
+time: 2023-02-07T00:01:51.00000Z
+custom:
+  Author: dependabot[bot]
+  PR: 6881
