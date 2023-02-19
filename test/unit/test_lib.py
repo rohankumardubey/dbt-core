@@ -17,16 +17,18 @@ class MockContext:
         }
         self.node.is_ephemeral_model = True
 
+
 def noop_ephemeral_result(*args):
     return None
 
+
 class TestSqlCompileRunnerNoIntrospection(unittest.TestCase):
     def setUp(self):
-            self.manifest = {'mock':'manifest'}
-            self.adapter = Plugin.adapter({})
-            self.adapter.connection_for = mock.MagicMock()
-            self.ephemeral_result = lambda: None
-            inject_adapter(self.adapter, Plugin)
+        self.manifest = {'mock': 'manifest'}
+        self.adapter = Plugin.adapter({})
+        self.adapter.connection_for = mock.MagicMock()
+        self.ephemeral_result = lambda: None
+        inject_adapter(self.adapter, Plugin)
 
     def tearDown(self):
         clear_plugin(Plugin)
@@ -45,7 +47,6 @@ class TestSqlCompileRunnerNoIntrospection(unittest.TestCase):
 
         mock_compile.assert_called_once_with(self.manifest)
         self.adapter.connection_for.assert_called_once()
-
 
     @mock.patch('dbt.lib._get_operation_node')
     @mock.patch('dbt.task.sql.GenericSqlRunner.compile')
