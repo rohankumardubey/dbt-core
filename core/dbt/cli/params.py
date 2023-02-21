@@ -34,10 +34,17 @@ cache_selected_only = click.option(
     help="Pre cache database objects relevant to selected resource only.",
 )
 
+introspect = click.option(
+    "--introspect/--no-introspect",
+    envvar="DBT_INTROSPECT",
+    help="Whether to scaffold introspective queries as part of compilation",
+    default=True,
+)
+
 compile_docs = click.option(
     "--compile/--no-compile",
     envvar=None,
-    help="Wether or not to run 'dbt compile' as part of docs generation",
+    help="Whether or not to run 'dbt compile' as part of docs generation",
     default=True,
 )
 

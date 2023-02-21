@@ -1,15 +1,27 @@
-my_ephemeral_model_sql = """
+first_model_sql = """
+select 1 as fun
+"""
+
+second_model_sql = """
+{%- set columns = adapter.get_columns_in_relation(ref('first_model')) -%}
+select
+    *,
+    {{ this.schema }} as schema
+from {{ ref('first_model') }}
+"""
+
+first_ephemeral_model_sql = """
 {{ config(materialized = 'ephemeral') }}
 select 1 as fun
 """
 
-another_ephemeral_model_sql = """
+second_ephemeral_model_sql = """
 {{ config(materialized = 'ephemeral') }}
-select * from {{ ref('my_ephemeral_model') }}
+select * from {{ ref('first_ephemeral_model') }}
 """
 
-my_other_model_sql = """
-select * from {{ ref('another_ephemeral_model')}}
+third_ephemeral_model_sql = """
+select * from {{ ref('second_ephemeral_model')}}
 union all
 select 2 as fun
 """

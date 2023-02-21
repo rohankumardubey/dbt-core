@@ -244,6 +244,7 @@ def docs_serve(ctx, **kwargs):
 @p.exclude
 @p.favor_state
 @p.full_refresh
+@p.introspect
 @p.parse_only
 @p.profile
 @p.profiles_dir

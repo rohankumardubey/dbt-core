@@ -1,10 +1,13 @@
 import pytest
 
+from dbt.exceptions import DbtRuntimeError
 from dbt.tests.util import run_dbt
 from tests.functional.compile.fixtures import (
-    my_ephemeral_model_sql,
-    another_ephemeral_model_sql,
-    my_other_model_sql,
+    first_model_sql,
+    second_model_sql,
+    first_ephemeral_model_sql,
+    second_ephemeral_model_sql,
+    third_ephemeral_model_sql,
 )
 
 
@@ -21,56 +24,66 @@ def file_exists(model_name):
     return file_exists("target", "compiled", "test", "models", model_name + ".sql")
 
 
-class TestBase:
+class TestIntrospectFlag:
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "my_ephemeral_model.sql": my_ephemeral_model_sql,
-            "another_ephemeral_model.sql": another_ephemeral_model_sql,
-            "my_other_model.sql": my_other_model_sql,
+            "first_model.sql": first_model_sql,
+            "second_model.sql": second_model_sql,
         }
 
+    def test_default(self, project):
+        run_dbt(["compile"])
+        assert get_lines("first_model") == ["select 1 as fun"]
+        assert any("_test_compile as schema" in line for line in get_lines("second_model"))
 
-class TestEphemeralModels(TestBase):
-    def test_ephemeral_models(self, project):
+    def test_no_introspect(self, project):
+        with pytest.raises(DbtRuntimeError, match="connection never acquired for thread"):
+            run_dbt(["compile", "--no-introspect"])
+
+
+class TestEphemeralModels:
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "first_ephemeral_model.sql": first_ephemeral_model_sql,
+            "second_ephemeral_model.sql": second_ephemeral_model_sql,
+            "third_ephemeral_model.sql": third_ephemeral_model_sql,
+        }
+
+    def test_first_selector(self, project):
+        run_dbt(["compile", "--select", "first_ephemeral_model"])
+        assert file_exists("first_ephemeral_model")
+        assert not file_exists("second_ephemeral_model")
+        assert not file_exists("third_ephemeral_model")
+
+    def test_middle_selector(self, project):
+        run_dbt(["compile", "--select", "second_ephemeral_model"])
+        assert file_exists("first_ephemeral_model")
+        assert file_exists("second_ephemeral_model")
+        assert not file_exists("third_ephemeral_model")
+
+    def test_last_selector(self, project):
+        run_dbt(["compile", "--select", "third_ephemeral_model"])
+        assert file_exists("first_ephemeral_model")
+        assert file_exists("second_ephemeral_model")
+        assert file_exists("third_ephemeral_model")
+
+    def test_no_selector(self, project):
         run_dbt(["compile"])
 
-        assert get_lines("my_ephemeral_model") == ["select 1 as fun"]
-        assert get_lines("another_ephemeral_model") == [
-            "with __dbt__cte__my_ephemeral_model as (",
+        assert get_lines("first_ephemeral_model") == ["select 1 as fun"]
+        assert get_lines("second_ephemeral_model") == [
+            "with __dbt__cte__first_ephemeral_model as (",
             "select 1 as fun",
-            ")select * from __dbt__cte__my_ephemeral_model",
+            ")select * from __dbt__cte__first_ephemeral_model",
         ]
-        assert get_lines("my_other_model") == [
-            "with __dbt__cte__my_ephemeral_model as (",
+        assert get_lines("third_ephemeral_model") == [
+            "with __dbt__cte__first_ephemeral_model as (",
             "select 1 as fun",
-            "),  __dbt__cte__another_ephemeral_model as (",
-            "select * from __dbt__cte__my_ephemeral_model",
-            ")select * from __dbt__cte__another_ephemeral_model",
+            "),  __dbt__cte__second_ephemeral_model as (",
+            "select * from __dbt__cte__first_ephemeral_model",
+            ")select * from __dbt__cte__second_ephemeral_model",
             "union all",
             "select 2 as fun",
         ]
-
-
-class TestFirstSelector(TestBase):
-    def test_first_selector(self, project):
-        run_dbt(["compile", "--select", "my_ephemeral_model"])
-        assert file_exists("my_ephemeral_model")
-        assert not file_exists("another_ephemeral_model")
-        assert not file_exists("my_other_model")
-
-
-class TestMiddleSelector(TestBase):
-    def test_first_selector(self, project):
-        run_dbt(["compile", "--select", "another_ephemeral_model"])
-        assert file_exists("my_ephemeral_model")
-        assert file_exists("another_ephemeral_model")
-        assert not file_exists("my_other_model")
-
-
-class TestLastSelector(TestBase):
-    def test_first_selector(self, project):
-        run_dbt(["compile", "--select", "my_other_model"])
-        assert file_exists("my_ephemeral_model")
-        assert file_exists("another_ephemeral_model")
-        assert file_exists("my_other_model")
