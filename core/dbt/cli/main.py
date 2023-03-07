@@ -251,6 +251,7 @@ def docs_serve(ctx, **kwargs):
 @p.project_dir
 @p.select
 @p.selector
+@p.inline
 @p.state
 @p.target
 @p.target_path

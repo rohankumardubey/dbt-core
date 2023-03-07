@@ -1,7 +1,7 @@
 import pytest
 
-from dbt.exceptions import DbtRuntimeError
-from dbt.tests.util import run_dbt
+from dbt.exceptions import DbtRuntimeError, TargetNotFoundError
+from dbt.tests.util import run_dbt, run_dbt_and_capture
 from tests.functional.compile.fixtures import (
     first_model_sql,
     second_model_sql,
@@ -87,3 +87,25 @@ class TestEphemeralModels:
             "union all",
             "select 2 as fun",
         ]
+
+
+class TestCompile:
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {"first_model.sql": first_model_sql, "second_model.sql": second_model_sql}
+
+    def test_inline_pass(self, project):
+        (results, log_output) = run_dbt_and_capture(
+            ["compile", "--inline", "select * from {{ ref('first_model') }}"]
+        )
+        assert 'Compiled node "inline_query" is:' in log_output
+
+    def test_select_pass(self, project):
+        (results, log_output) = run_dbt_and_capture(["compile", "--select", "second_model"])
+        assert 'Compiled node "second_model" is:' in log_output
+
+    def test_inline_fail(self, project):
+        with pytest.raises(
+            TargetNotFoundError, match="depends on a node named 'third_model' which was not found"
+        ):
+            run_dbt(["compile", "--inline", "select * from {{ ref('third_model') }}"])

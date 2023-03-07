@@ -286,6 +286,8 @@ select_attrs = {
     "type": tuple,
 }
 
+inline = click.option("--inline", envvar=None, help="Pass SQL inline to dbt compile and preview")
+
 # `--select` and `--models` are analogous for most commands except `dbt list` for legacy reasons.
 # Most CLI arguments should use the combined `select` option that aliases `--models` to `--select`.
 # However, if you need to split out these separators (like `dbt ls`), use the `models` and `raw_select` options instead.
