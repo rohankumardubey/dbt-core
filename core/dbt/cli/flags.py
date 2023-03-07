@@ -29,6 +29,7 @@ FLAGS_DEFAULTS = {
     "FULL_REFRESH": False,
     "STRICT_MODE": False,
     "STORE_FAILURES": False,
+    "INTROSPECT": True,
 }
 
 

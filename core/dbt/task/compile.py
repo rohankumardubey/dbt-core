@@ -97,7 +97,7 @@ class CompileTask(GraphRunnableTask):
         write_manifest(self.manifest, self.config.target_path)
 
     def _runtime_initialize(self):
-        if self.args.inline:
+        if hasattr(self.args, "inline"):
             block_parser = SqlBlockParser(
                 project=self.config, manifest=self.manifest, root_project=self.config
             )
