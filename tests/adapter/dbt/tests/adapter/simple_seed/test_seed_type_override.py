@@ -65,7 +65,7 @@ class BaseSimpleSeedColumnOverride:
         }
 
     def test_simple_seed_with_column_override(self, project):
-        seed_results = run_dbt(["seed", "--show"])
+        seed_results = run_dbt(["seed"])
         assert len(seed_results) == 2
         test_results = run_dbt(["test"])
         assert len(test_results) == 10

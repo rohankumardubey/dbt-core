@@ -78,7 +78,7 @@ def run_check_cols_snapshot_with_schema_change(project, check_cols_override=None
 
     # 1. Create a table that represents the expected data after a series of snapshots
     vars_dict = {"version": 1, "updated_at": "2016-07-01"}
-    results = run_dbt(["seed", "--show", "--vars", str(vars_dict)])
+    results = run_dbt(["seed", "--vars", str(vars_dict)])
     assert len(results) == 1
 
     # Snapshot 1

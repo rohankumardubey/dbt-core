@@ -88,7 +88,7 @@ def test_simple_snapshot(project):
     """
 
     # 1. Create a table that represents the expected data after a series of snapshots
-    results = run_dbt(["seed", "--show", "--vars", "{version: 1, updated_at: 2016-07-01}"])
+    results = run_dbt(["seed", "--vars", "{version: 1, updated_at: 2016-07-01}"])
     assert len(results) == 1
 
     # 2. Execute a series of snapshots to create the data

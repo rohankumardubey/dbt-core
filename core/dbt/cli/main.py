@@ -114,7 +114,6 @@ def cli(ctx, **kwargs):
 @p.resource_type
 @p.select
 @p.selector
-@p.show
 @p.state
 @p.store_failures
 @p.target
@@ -474,7 +473,6 @@ def run_operation(ctx, **kwargs):
 @p.project_dir
 @p.select
 @p.selector
-@p.show
 @p.state
 @p.target
 @p.target_path

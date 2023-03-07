@@ -1,24 +1,17 @@
-import random
-
-from .run import ModelRunner, RunTask
-from .printer import (
-    print_run_end_messages,
-)
-
-from dbt.contracts.results import RunStatus
-from dbt.exceptions import DbtInternalError
-from dbt.graph import ResourceTypeSelector
-from dbt.logger import TextOnly
+from dbt.contracts.results import NodeStatus
+from dbt.events.base_types import EventLevel
 from dbt.events.functions import fire_event
 from dbt.events.types import (
-    SeedHeader,
-    Formatting,
     LogSeedResult,
     LogStartLine,
 )
-from dbt.events.base_types import EventLevel
+from dbt.exceptions import DbtInternalError
+from dbt.graph import ResourceTypeSelector
 from dbt.node_types import NodeType
-from dbt.contracts.results import NodeStatus
+from .printer import (
+    print_run_end_messages,
+)
+from .run import ModelRunner, RunTask
 
 
 class SeedRunner(ModelRunner):
@@ -84,29 +77,4 @@ class SeedTask(RunTask):
         return SeedRunner
 
     def task_end_messages(self, results):
-        if self.args.show:
-            self.show_tables(results)
-
         print_run_end_messages(results)
-
-    def show_table(self, result):
-        table = result.agate_table
-        rand_table = table.order_by(lambda x: random.random())
-
-        schema = result.node.schema
-        alias = result.node.alias
-
-        header = "Random sample of table: {}.{}".format(schema, alias)
-        with TextOnly():
-            fire_event(Formatting(""))
-        fire_event(SeedHeader(header=header))
-        fire_event(Formatting("-" * len(header)))
-
-        rand_table.print_table(max_rows=10, max_columns=None)
-        with TextOnly():
-            fire_event(Formatting(""))
-
-    def show_tables(self, results):
-        for result in results:
-            if result.status != RunStatus.Error:
-                self.show_table(result)

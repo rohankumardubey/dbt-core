@@ -332,10 +332,6 @@ selector = click.option(
     "--selector", envvar=None, help="The selector name to use, as defined in selectors.yml"
 )
 
-show = click.option(
-    "--show", envvar=None, help="Show a sample of the loaded data in the terminal", is_flag=True
-)
-
 # TODO:  The env var is a correction!
 # The original env var was `DBT_TEST_SINGLE_THREADED`.
 # This broke the existing naming convention.
