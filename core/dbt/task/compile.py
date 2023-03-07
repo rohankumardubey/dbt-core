@@ -43,7 +43,11 @@ class CompileTask(GraphRunnableTask):
         return True
 
     def get_node_selector(self) -> ResourceTypeSelector:
-        resource_types = [NodeType.SqlOperation] if self.args.inline else NodeType.executable()
+        resource_types = (
+            [NodeType.SqlOperation]
+            if getattr(self.args, "inline", None)
+            else NodeType.executable()
+        )
         if self.manifest is None or self.graph is None:
             raise DbtInternalError("manifest and graph must be set to get perform node selection")
         return ResourceTypeSelector(
@@ -97,7 +101,7 @@ class CompileTask(GraphRunnableTask):
         write_manifest(self.manifest, self.config.target_path)
 
     def _runtime_initialize(self):
-        if hasattr(self.args, "inline"):
+        if getattr(self.args, "inline", None):
             block_parser = SqlBlockParser(
                 project=self.config, manifest=self.manifest, root_project=self.config
             )

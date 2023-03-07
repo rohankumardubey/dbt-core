@@ -43,6 +43,7 @@ EXPECTED_DUPLICATE_PARAMS = [
     "fail_fast",
     "indirect_selection",
     "store_failures",
+    "introspect",
 ]
 
 
