@@ -1693,7 +1693,7 @@ class CompiledNode(InfoLevel, pt.CompiledNode):
         return "Q028"
 
     def message(self) -> str:
-        return f'Compiled node "{self.node_name}" is:\n{self.compiled}'
+        return f"Compiled node '{self.node_name}' is:\n{self.compiled}"
 
 
 @dataclass

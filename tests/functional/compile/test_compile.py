@@ -98,11 +98,11 @@ class TestCompile:
         (results, log_output) = run_dbt_and_capture(
             ["compile", "--inline", "select * from {{ ref('first_model') }}"]
         )
-        assert 'Compiled node "inline_query" is:' in log_output
+        assert "Compiled node 'inline_query' is:" in log_output
 
     def test_select_pass(self, project):
         (results, log_output) = run_dbt_and_capture(["compile", "--select", "second_model"])
-        assert 'Compiled node "second_model" is:' in log_output
+        assert "Compiled node 'second_model' is:" in log_output
 
     def test_inline_fail(self, project):
         with pytest.raises(
