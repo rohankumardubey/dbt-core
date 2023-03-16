@@ -477,6 +477,6 @@ warn_error_options = click.option(
 write_json = click.option(
     "--write-json/--no-write-json",
     envvar="DBT_WRITE_JSON",
-    help="Writing the manifest and run_results.json files to disk",
+    help="Whether or not to write the manifest.json and run_results.json files to the target directory",
     default=True,
 )
