@@ -180,7 +180,7 @@ output_path = click.option(
     "--output",
     "-o",
     envvar=None,
-    help="Specify the output path for the json report. By default, outputs to 'target/sources.json'",
+    help="Specify the output path for the JSON report. By default, outputs to 'target/sources.json'",
     type=click.Path(file_okay=True, dir_okay=False, writable=True),
     default=PurePath.joinpath(Path.cwd(), "target/sources.json"),
 )
@@ -359,7 +359,7 @@ skip_profile_setup = click.option(
 state = click.option(
     "--state",
     envvar="DBT_STATE",
-    help="If set, use the given directory as the source for json files to compare with this project.",
+    help="If set, use the given directory as the source for JSON files to compare with this project.",
     type=click.Path(
         dir_okay=True,
         file_okay=False,
