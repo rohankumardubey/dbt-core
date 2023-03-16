@@ -44,7 +44,7 @@ compile_docs = click.option(
 config_dir = click.option(
     "--config-dir",
     envvar=None,
-    help="If specified, DBT will show path information for this project",
+    help="Show path information for this project",
     type=click.STRING,
 )
 
