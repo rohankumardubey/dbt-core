@@ -41,13 +41,6 @@ compile_docs = click.option(
     default=True,
 )
 
-compile_parse = click.option(
-    "--compile/--no-compile",
-    envvar=None,
-    help="TODO: No help text currently available",
-    default=True,
-)
-
 config_dir = click.option(
     "--config-dir",
     envvar=None,
@@ -485,12 +478,5 @@ write_json = click.option(
     "--write-json/--no-write-json",
     envvar="DBT_WRITE_JSON",
     help="Writing the manifest and run_results.json files to disk",
-    default=True,
-)
-
-write_manifest = click.option(
-    "--write-manifest/--no-write-manifest",
-    envvar=None,
-    help="TODO: No help text currently available",
     default=True,
 )
