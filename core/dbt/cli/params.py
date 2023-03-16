@@ -281,7 +281,7 @@ resource_type = click.option(
     "--resource-types",
     "--resource-type",
     envvar=None,
-    help="TODO: No current help text",
+    help="Restricts the types of resources that dbt will include",
     type=ChoiceTuple(
         [
             "metric",
