@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Iterable
 
 import click
 from dbt.cli import requires, params as p
@@ -39,14 +39,14 @@ class dbtRunner:
         project: Project = None,
         profile: Profile = None,
         manifest: Manifest = None,
-        callbacks: List[Callable[[EventMsg], None]] = [],
+        callbacks: Iterable[Callable[[EventMsg], None]] = (),
     ):
         self.project = project
         self.profile = profile
         self.manifest = manifest
         self.callbacks = callbacks
 
-    def invoke(self, args: List[str]) -> Tuple[Optional[List], bool]:
+    def invoke(self, args: List[str], **kwargs) -> Tuple[Optional[List], bool]:
         try:
             dbt_ctx = cli.make_context(cli.name, args)
             dbt_ctx.obj = {
@@ -55,6 +55,15 @@ class dbtRunner:
                 "manifest": self.manifest,
                 "callbacks": self.callbacks,
             }
+
+            params = {}
+
+            for key, value in (*dbt_ctx.params.items(), *kwargs.items()):
+                if value and key.upper():
+                    params[key.upper()] = value
+
+            object.__setattr__(dbt_ctx, "params", params)
+
             return cli.invoke(dbt_ctx)
         except click.exceptions.Exit as e:
             # 0 exit code, expected for --version early exit
