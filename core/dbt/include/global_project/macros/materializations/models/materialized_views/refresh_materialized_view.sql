@@ -4,6 +4,7 @@
 
 {% macro default__refresh_materialized_view(relation, config) -%}
 
-    refresh materialized view {{relation}}
+    { exceptions.raise_not_implemented(
+    'refresh_materialized_view not implemented for adapter '+adapter.type()) }}
 
 {% endmacro %}

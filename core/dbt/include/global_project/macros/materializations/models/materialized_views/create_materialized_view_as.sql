@@ -5,8 +5,7 @@
 
 {% macro default__create_materialized_view_as(relation, sql, config) -%}
 
-    create materialized view {{relation}} as (
-        {{sql}}
-    )
+    { exceptions.raise_not_implemented(
+    'create_materialized_view_as macro not implemented for adapter '+adapter.type()) }}
 
 {% endmacro %}
