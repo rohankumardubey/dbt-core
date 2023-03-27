@@ -72,7 +72,11 @@ enable_legacy_logger = click.option(
 )
 
 exclude = click.option(
-    "--exclude", envvar=None, type=tuple, cls=MultiOption, help="Specify the nodes to exclude."
+    "--exclude",
+    envvar=None,
+    type=tuple,
+    cls=MultiOption,
+    help="Specify the nodes to exclude.",
 )
 
 fail_fast = click.option(
@@ -303,7 +307,11 @@ select_attrs = {
     "type": tuple,
 }
 
-inline = click.option("--inline", envvar=None, help="Pass SQL inline to dbt compile and preview")
+inline = click.option(
+    "--inline",
+    envvar=None,
+    help="Pass SQL inline to dbt compile and preview",
+)
 
 # `--select` and `--models` are analogous for most commands except `dbt list` for legacy reasons.
 # Most CLI arguments should use the combined `select` option that aliases `--models` to `--select`.
@@ -314,7 +322,9 @@ raw_select = click.option(*select_decls, **select_attrs)
 select = click.option(*select_decls, *model_decls, **select_attrs)
 
 selector = click.option(
-    "--selector", envvar=None, help="The selector name to use, as defined in selectors.yml"
+    "--selector",
+    envvar=None,
+    help="The selector name to use, as defined in selectors.yml",
 )
 
 send_anonymous_usage_stats = click.option(
@@ -325,7 +335,10 @@ send_anonymous_usage_stats = click.option(
 )
 
 show = click.option(
-    "--show", envvar=None, help="Show a sample of the loaded data in the terminal", is_flag=True
+    "--show",
+    envvar=None,
+    help="Show a sample of the loaded data in the terminal",
+    is_flag=True,
 )
 
 # TODO:  The env var is a correction!
@@ -342,7 +355,11 @@ single_threaded = click.option(
 )
 
 skip_profile_setup = click.option(
-    "--skip-profile-setup", "-s", envvar=None, help="Skip interactive profile setup.", is_flag=True
+    "--skip-profile-setup",
+    "-s",
+    envvar=None,
+    help="Skip interactive profile setup.",
+    is_flag=True,
 )
 
 # TODO:  The env var and name (reflected in flags) are corrections!
@@ -377,7 +394,10 @@ store_failures = click.option(
 )
 
 target = click.option(
-    "--target", "-t", envvar=None, help="Which target to load for the given profile"
+    "--target",
+    "-t",
+    envvar=None,
+    help="Which target to load for the given profile",
 )
 
 target_path = click.option(
