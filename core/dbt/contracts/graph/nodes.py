@@ -170,6 +170,10 @@ class ColumnLevelConstraint(dbtClassMixin):
     )
 
 
+class ModelLevelConstraint(ColumnLevelConstraint):
+    column_names: List[str] = field(default_factory=list)
+
+
 @dataclass
 class ColumnInfo(AdditionalPropertiesMixin, ExtensibleDbtClassMixin, Replaceable):
     """Used in all ManifestNodes and SourceDefinition"""
@@ -513,6 +517,7 @@ class HookNode(CompiledNode):
 class ModelNode(CompiledNode):
     resource_type: NodeType = field(metadata={"restrict": [NodeType.Model]})
     access: AccessType = AccessType.Protected
+    constraints: List[ModelLevelConstraint] = field(default_factory=list)
 
 
 # TODO: rm?
