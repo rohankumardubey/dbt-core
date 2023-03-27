@@ -159,7 +159,7 @@ macro_debugging = click.option(
 output = click.option(
     "--output",
     envvar=None,
-    help="TODO: No current help text",
+    help="Specify the output format: either JSON or a newline-delimited list of selectors, paths, or names",
     type=click.Choice(["json", "name", "path", "selector"], case_sensitive=False),
     default="selector",
 )
