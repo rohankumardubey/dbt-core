@@ -455,6 +455,8 @@ def _version_callback(ctx, _param, value):
 
 version = click.option(
     "--version",
+    "-V",
+    "-v",
     callback=_version_callback,
     envvar=None,
     expose_value=False,
