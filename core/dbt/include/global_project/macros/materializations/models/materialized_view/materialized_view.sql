@@ -1,5 +1,5 @@
 {%- materialization materialized_view, default -%}
-  {% set full_refresh_mode = (should_full_refresh()) %}
+  {% set full_refresh_mode = should_full_refresh() %}
   {%- set existing_relation = load_cached_relation(this) -%}
   {%- set target_relation = this.incorporate(type='view') -%}
   {%- set intermediate_relation =  make_intermediate_relation(target_relation) -%}
