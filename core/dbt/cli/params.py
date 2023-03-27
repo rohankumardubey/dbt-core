@@ -185,13 +185,6 @@ output_path = click.option(
     default=PurePath.joinpath(Path.cwd(), "target/sources.json"),
 )
 
-parse_only = click.option(
-    "--parse-only",
-    envvar=None,
-    help="TODO:  No help text currently available",
-    is_flag=True,
-)
-
 partial_parse = click.option(
     "--partial-parse/--no-partial-parse",
     envvar="DBT_PARTIAL_PARSE",
