@@ -380,7 +380,6 @@ cli.add_command(ls, "ls")
 # dbt parse
 @cli.command("parse")
 @click.pass_context
-@p.compile_parse
 @p.profile
 @p.profiles_dir
 @p.project_dir
@@ -389,7 +388,6 @@ cli.add_command(ls, "ls")
 @p.threads
 @p.vars
 @p.version_check
-@p.write_manifest
 @requires.preflight
 @requires.profile
 @requires.project
