@@ -460,7 +460,7 @@ version = click.option(
     callback=_version_callback,
     envvar=None,
     expose_value=False,
-    help="Show version information",
+    help="Show version information and exit",
     is_eager=True,
     is_flag=True,
 )
