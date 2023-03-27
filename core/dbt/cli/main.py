@@ -129,7 +129,7 @@ def cli(ctx, **kwargs):
 @requires.runtime_config
 @requires.manifest
 def build(ctx, **kwargs):
-    """Run all Seeds, Models, Snapshots, and tests in DAG order"""
+    """Run all seeds, models, snapshots, and tests in DAG order"""
     task = BuildTask(
         ctx.obj["flags"],
         ctx.obj["runtime_config"],
