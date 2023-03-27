@@ -1,5 +1,5 @@
 {% macro create_or_replace_materialized_view() %}
- {{ return(adapter.dispatch('create_or_replace_materialized_view') }}
+ {{ adapter.dispatch('create_or_replace_materialized_view') }}
 
 {% endmacro %}
 
