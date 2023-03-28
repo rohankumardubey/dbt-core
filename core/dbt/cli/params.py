@@ -44,8 +44,8 @@ compile_docs = click.option(
 config_dir = click.option(
     "--config-dir",
     envvar=None,
-    help="Show path information for this project",
-    type=click.STRING,
+    help="Show path information for this project and exit",
+    is_flag=True,
 )
 
 debug = click.option(
