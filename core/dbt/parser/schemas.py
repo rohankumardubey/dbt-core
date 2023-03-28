@@ -938,7 +938,7 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
 
             node.patch(patch)
 
-            if isinstance(node, ModelNode):
+            if isinstance(node, ModelNode) and node.config.contract is True:
                 self.validate_constraint_prerequisites(node)
 
                 if any(

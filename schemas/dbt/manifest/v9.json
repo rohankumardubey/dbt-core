@@ -1822,6 +1822,37 @@
             "public"
           ],
           "default": "protected"
+        },
+        "constraints": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "expression": {
+                    "type": "string"
+                  },
+                  "warn_unenforced": {
+                    "type": "boolean"
+                  },
+                  "warn_unsupported": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "additionalProperties": false,

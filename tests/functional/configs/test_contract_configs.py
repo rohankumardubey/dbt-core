@@ -346,9 +346,7 @@ class TestModelLevelContractErrorMessages:
             run_dbt(["run"], expect_pass=False)
 
         exc_str = " ".join(str(err_info.value).split())
-        expected_materialization_error = (
-            "Materialization Error: {'materialization': 'Incremental'}"
-        )
+        expected_materialization_error = "Only 'table' and 'view' materializations are supported for constraints, but found 'Incremental'"
         assert expected_materialization_error in str(exc_str)
         # This is a compile time error and we won't get here because the materialization is parse time
         expected_empty_data_type_error = "Columns with `data_type` Blank/Null not allowed on contracted models. Columns Blank/Null: ['date_day']"
@@ -368,7 +366,7 @@ class TestSchemaContractEnabledConfigs:
             run_dbt(["parse"], expect_pass=False)
 
         exc_str = " ".join(str(err_info.value).split())
-        schema_error_expected = "Schema Error: `yml` configuration does NOT exist"
+        schema_error_expected = "Constraints must be defined in a `yml` schema configuration file"
         assert schema_error_expected in str(exc_str)
 
 
@@ -385,5 +383,5 @@ class TestPythonModelLevelContractErrorMessages:
             run_dbt(["parse"], expect_pass=False)
 
         exc_str = " ".join(str(err_info.value).split())
-        expected_python_error = "Language Error: {'language': 'python'}"
+        expected_python_error = "Language Error: Expected 'sql' but found 'python'"
         assert expected_python_error in exc_str
