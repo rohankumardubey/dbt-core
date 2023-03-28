@@ -44,7 +44,7 @@ compile_docs = click.option(
 config_dir = click.option(
     "--config-dir",
     envvar=None,
-    help="Show path information for this project and exit",
+    help="Show the configured location for the profiles.yml file and exit",
     is_flag=True,
 )
 
