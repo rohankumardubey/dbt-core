@@ -160,6 +160,7 @@ macro_debugging = click.option(
     hidden=True,
 )
 
+# This less standard usage of --output where output_path below is more standard
 output = click.option(
     "--output",
     envvar=None,
@@ -262,6 +263,7 @@ project_dir = click.option(
 
 quiet = click.option(
     "--quiet/--no-quiet",
+    "-q",
     envvar="DBT_QUIET",
     help="Suppress all non-error logging to stdout. Does not affect {{ print() }} macro calls.",
 )
