@@ -40,7 +40,7 @@
   -- move the existing view out of the way
   {% if existing_relation is none %}
       {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
-  {% elif full_refresh_mode or existing_relation.type != 'materializedview' %}
+  {% elif full_refresh_mode or existing_relation.type != 'view' %}
       {% do adapter.rename_relation(target_relation, backup_relation) %}
       {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
   {% else %}
