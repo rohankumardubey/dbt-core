@@ -20,6 +20,8 @@
      exist, then there is nothing to move out of the way and subsequentally drop. In that case,
      this relation will be effectively unused.
   */
+  {%- set backup_relation_type = 'view' if existing_relation is none else existing_relation.type -%}
+  {%- set backup_relation = make_backup_relation(target_relation, backup_relation_type) -%}
   -- as above, the backup_relation should not already exist
   {%- set preexisting_backup_relation = load_cached_relation(backup_relation) -%}
   -- grab current tables grants config for comparision later on
@@ -29,6 +31,7 @@
 
   -- drop the temp relations if they exist already in the database
   {{ drop_relation_if_exists(preexisting_intermediate_relation) }}
+  {{ drop_relation_if_exists(preexisting_backup_relation) }}
 
   -- `BEGIN` happens here:
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
@@ -37,16 +40,9 @@
   -- move the existing view out of the way
   {% if existing_relation is none %}
       {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
-
   {% elif full_refresh_mode or existing_relation.type != 'materializedview' %}
-      {#-- Make sure the backup doesn't exist so we don't encounter issues with the rename below #}
-      {% set backup_identifier = existing_relation.identifier ~ "__dbt_backup" %}
-      {% set backup_relation = existing_relation.incorporate(path={"identifier": backup_identifier}) %}
-      {% do adapter.drop_relation(backup_relation) %}
-
       {% do adapter.rename_relation(target_relation, backup_relation) %}
       {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
-
   {% else %}
       {% set build_sql = refresh_materialized_view(target_relation, config) %}
   {% endif %}
