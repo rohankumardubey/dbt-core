@@ -40,6 +40,7 @@ from dbt.contracts.graph.nodes import (
     GraphMemberNode,
     ConstraintType,
     ModelNode,
+    ModelLevelConstraint,
 )
 from dbt.contracts.graph.unparsed import (
     HasColumnDocs,
@@ -949,7 +950,7 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
                     raise ParsingError(f"Invalid constraint type on model {block.target.name}")
 
                 node.constraints = [
-                    ColumnLevelConstraint.from_dict(c) for c in block.target.constraints
+                    ModelLevelConstraint.from_dict(c) for c in block.target.constraints
                 ]
 
     def validate_constraint_prerequisites(self, model_node: ModelNode):
