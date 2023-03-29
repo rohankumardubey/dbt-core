@@ -402,6 +402,9 @@ class ParsedNode(NodeInfoMixin, ParsedNodeMandatory, SerializableType):
 
     def patch(self, patch: "ParsedNodePatch"):
         """Given a ParsedNodePatch, add the new information to the node."""
+        # NOTE: Constraint patching is awkwardly done in the parse_patch function
+        # which calls this one. We need to combine the logic.
+
         # explicitly pick out the parts to update so we don't inadvertently
         # step on the model name or anything
         # Note: config should already be updated

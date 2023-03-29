@@ -943,6 +943,9 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
 
             node.patch(patch)
 
+            # TODO: We want to do all the actual patching either in the above node.patch() call
+            # or here, but it will require some thought to the details. For now the patching is
+            # awkwardly split.
             contract_config = node.config.get("contract")
             if isinstance(node, ModelNode) and contract_config.enforced is True:
                 self.validate_constraint_prerequisites(node)
@@ -952,7 +955,10 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
                     for c in block.target.constraints
                     if "type" not in c or not ConstraintType.is_valid(c["type"])
                 ):
-                    raise ParsingError(f"Invalid constraint type on model {block.target.name}")
+                    raise ParsingError(
+                        f"Invalid constraint type on model {block.target.name}: "
+                        f"Type must be one of {[ct.value for ct in ConstraintType]}"
+                    )
 
                 node.constraints = [
                     ModelLevelConstraint.from_dict(c) for c in block.target.constraints
