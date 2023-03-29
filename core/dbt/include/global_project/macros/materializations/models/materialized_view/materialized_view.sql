@@ -20,8 +20,6 @@
      exist, then there is nothing to move out of the way and subsequentally drop. In that case,
      this relation will be effectively unused.
   */
-  {%- set backup_relation_type = 'view' if existing_relation is none else existing_relation.type -%}
-  {%- set backup_relation = make_backup_relation(target_relation, backup_relation_type) -%}
   -- as above, the backup_relation should not already exist
   {%- set preexisting_backup_relation = load_cached_relation(backup_relation) -%}
   -- grab current tables grants config for comparision later on
@@ -31,14 +29,9 @@
 
   -- drop the temp relations if they exist already in the database
   {{ drop_relation_if_exists(preexisting_intermediate_relation) }}
-  {{ drop_relation_if_exists(preexisting_backup_relation) }}
 
   -- `BEGIN` happens here:
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
-
-  {% call statement("main") %}
-      {{ build_sql }}
-  {% endcall %}
 
   -- cleanup
   -- move the existing view out of the way
@@ -57,6 +50,12 @@
   {% else %}
       {% set build_sql = refresh_materialized_view(target_relation, config) %}
   {% endif %}
+
+    -- possible conditional wrapper for build_sql statement based on configs as a option?
+    -- build model
+  {% call statement("main") %}
+      {{ build_sql }}
+  {% endcall %}
 
   {% set should_revoke = should_revoke(existing_relation, full_refresh_mode=True) %}
   {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
