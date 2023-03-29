@@ -799,6 +799,7 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
                     self.normalize_meta_attribute(data, path)
                     self.normalize_docs_attribute(data, path)
                     self.normalize_group_attribute(data, path)
+                    self.normalize_contract_attribute(data, path)
                 node = self._target_type().from_dict(data)
             except (ValidationError, JSONValidationError) as exc:
                 raise YamlParseDictError(path, self.key, data, exc)
@@ -829,6 +830,9 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
 
     def normalize_group_attribute(self, data, path):
         return self.normalize_attribute(data, path, "group")
+
+    def normalize_contract_attribute(self, data, path):
+        return self.normalize_attribute(data, path, "contract")
 
     def patch_node_config(self, node, patch):
         # Get the ContextConfig that's used in calculating the config
@@ -939,7 +943,8 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
 
             node.patch(patch)
 
-            if isinstance(node, ModelNode) and node.config.contract is True:
+            contract_config = node.config.get("contract")
+            if isinstance(node, ModelNode) and contract_config.enforced is True:
                 self.validate_constraint_prerequisites(node)
 
                 if any(
@@ -953,6 +958,8 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
                     ModelLevelConstraint.from_dict(c) for c in block.target.constraints
                 ]
 
+            node.build_contract_checksum()
+
     def validate_constraint_prerequisites(self, model_node: ModelNode):
         errors = []
         if not model_node.columns:
@@ -960,9 +967,9 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
                 "Constraints must be defined in a `yml` schema configuration file like `schema.yml`."
             )
 
-        if model_node.config.materialized not in ["table", "view"]:
+        if model_node.config.materialized not in ["table", "view", "incremental"]:
             errors.append(
-                f"Only 'table' and 'view' materializations are supported for constraints, but found '{model_node.config.materialized}'"
+                f"Only table, view, and incremental materializations are supported for constraints, but found '{model_node.config.materialized}'"
             )
 
         if str(model_node.language) != "sql":
