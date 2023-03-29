@@ -11,7 +11,7 @@
   {%- endif %} table {{ relation }}
   {% if config.get('contract', False) %}
     {{ get_assert_columns_equivalent(sql) }}
-    {{ get_columns_spec_ddl() }} ;
+    {{ get_table_columns_and_constraints() }} ;
     insert into {{ relation }} {{ get_column_names() }}
     {%- set sql = get_select_subquery(sql) %}
   {% else %}

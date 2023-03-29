@@ -20,6 +20,7 @@ from dbt.tests.adapter.constraints.fixtures import (
     my_model_view_wrong_name_sql,
     my_model_with_nulls_sql,
     model_schema_yml,
+    constrained_model_schema_yml,
 )
 
 
@@ -172,6 +173,10 @@ class BaseConstraintsColumnsEqual:
             assert contract_actual_config is True
 
 
+def _normalize_whitespace(input: str) -> str:
+    return re.sub(r"\s+", " ", input).lower().strip()
+
+
 # This is SUPER specific to Postgres, and will need replacing on other adapters
 # TODO: make more generic
 _expected_sql = """
@@ -235,20 +240,8 @@ class BaseConstraintsRuntimeEnforcement:
     def test__constraints_ddl(self, project, expected_sql):
         results = run_dbt(["run", "-s", "my_model"])
         assert len(results) == 1
-        # TODO: consider refactoring this to introspect logs instead
         generated_sql = read_file("target", "run", "test", "models", "my_model.sql")
-
-        generated_sql_check = re.sub(r"\s+", " ", generated_sql).lower().strip()
-        expected_sql_check = re.sub(r"\s+", " ", expected_sql).lower().strip()
-        assert (
-            expected_sql_check == generated_sql_check
-        ), f"""
--- GENERATED SQL
-{generated_sql_check}
-
--- EXPECTED SQL
-{expected_sql_check}
-"""
+        assert _normalize_whitespace(expected_sql) == _normalize_whitespace(generated_sql)
 
     def test__constraints_enforcement_rollback(
         self, project, expected_color, expected_error_messages
@@ -310,4 +303,65 @@ class TestViewConstraintsColumnsEqual(BaseViewConstraintsColumnsEqual):
 
 
 class TestConstraintsRuntimeEnforcement(BaseConstraintsRuntimeEnforcement):
+    pass
+
+
+_expected_model_constraint_sql = """
+create table {0} (
+    id integer not null,
+    color text,
+    date_day text,
+    check (id > 0),
+    primary key (id),
+    constraint strange_uniqueness_requirement unique (color, date_day)
+) ;
+insert into {0} (
+    id ,
+    color ,
+    date_day
+)
+(
+    select
+       id,
+       color,
+       date_day
+       from
+    (
+        select
+            'blue' as color,
+            1 as id,
+            '2019-01-01' as date_day
+    ) as model_subq
+);
+"""
+
+
+class BaseModelConstraintsRuntimeEnforcement:
+    """
+    These model-level constraints pass muster for dbt's preflight checks. Make sure they're
+    passed into the DDL statement. If they don't match up with the underlying data,
+    the data platform should raise an error at runtime.
+    """
+
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_model_sql,
+            "constraints_schema.yml": constrained_model_schema_yml,
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_sql(self, project):
+        relation = relation_from_name(project.adapter, "my_model")
+        tmp_relation = relation.incorporate(path={"identifier": relation.identifier + "__dbt_tmp"})
+        return _expected_model_constraint_sql.format(tmp_relation)
+
+    def test__model_constraints_ddl(self, project, expected_sql):
+        results = run_dbt(["run", "-s", "my_model"])
+        assert len(results) == 1
+        generated_sql = read_file("target", "run", "test", "models", "my_model.sql")
+        assert _normalize_whitespace(expected_sql) == _normalize_whitespace(generated_sql)
+
+
+class TestModelConstraintsRuntimeEnforcement(BaseModelConstraintsRuntimeEnforcement):
     pass

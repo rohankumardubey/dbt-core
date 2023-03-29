@@ -27,7 +27,7 @@
     {{ relation.include(database=(not temporary), schema=(not temporary)) }}
   {% if config.get('contract', False) %}
     {{ get_assert_columns_equivalent(sql) }}
-    {{ get_columns_spec_ddl() }}
+    {{ get_table_columns_and_constraints() }}
     {%- set sql = get_select_subquery(sql) %}
   {% endif %}
   as (

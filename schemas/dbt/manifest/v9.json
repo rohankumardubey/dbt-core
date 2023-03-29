@@ -1845,6 +1845,12 @@
                   },
                   "warn_unsupported": {
                     "type": "boolean"
+                  },
+                  "columns": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
