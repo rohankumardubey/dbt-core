@@ -39,12 +39,12 @@
   -- cleanup
   -- move the existing view out of the way
   {% if existing_relation is none %}
-      {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
+      {% set build_sql = create_materialized_view_as(target_relation, sql) %}
   {% elif full_refresh_mode or existing_relation.type != 'view' %}
       {% do adapter.rename_relation(target_relation, backup_relation) %}
-      {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
+      {% set build_sql = create_materialized_view_as(target_relation, sql) %}
   {% else %}
-      {% set build_sql = refresh_materialized_view(target_relation, config) %}
+      {% set build_sql = refresh_materialized_view(target_relation) %}
   {% endif %}
 
     -- possible conditional wrapper for build_sql statement based on configs as a option?

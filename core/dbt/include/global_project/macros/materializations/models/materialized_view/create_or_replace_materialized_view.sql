@@ -1,5 +1,5 @@
 {% macro create_or_replace_materialized_view() %}
- {{ adapter.dispatch('create_or_replace_materialized_view') }}
+ {{ adapter.dispatch('create_or_replace_materialized_view', 'dbt') }}
 
 {% endmacro %}
 
