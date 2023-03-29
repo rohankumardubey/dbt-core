@@ -36,6 +36,9 @@
   -- `BEGIN` happens here:
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
+  {% call statement("main") %}
+      {{ build_sql }}
+  {% endcall %}
 
   -- cleanup
   -- move the existing view out of the way
@@ -50,7 +53,6 @@
 
       {% do adapter.rename_relation(target_relation, backup_relation) %}
       {% set build_sql = create_materialized_view_as(target_relation, sql, config) %}
-      {% do to_drop.append(backup_relation) %}
 
   {% else %}
       {% set build_sql = refresh_materialized_view(target_relation, config) %}
