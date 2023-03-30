@@ -5,7 +5,7 @@
 
 {% macro default__create_or_replace_materialized_view() -%}
 
-    { exceptions.raise_not_implemented(
+    {{ exceptions.raise_not_implemented(
     'create_or_replace_materialized_view macro not implemented for adapter '+adapter.type()) }}
 
 {% endmacro %}
