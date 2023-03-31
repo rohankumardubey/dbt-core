@@ -14,7 +14,13 @@
     {% for i in user_provided_columns %}
       {%- set col = user_provided_columns[i] -%}
       {%- set constraints = col['constraints'] -%}
-      {{ col['name'] }} {{ col['data_type'] }}{% for c in constraints %} {{ adapter.render_raw_column_constraint(c) }}{% endfor %}{{ "," if not loop.last or model_constraints }}
+      {{ col['name'] }} {{ col['data_type'] }}
+      {%- for c in constraints -%}
+        {%- set constraint_str = adapter.render_raw_column_constraint(c) -%}
+        {%- if constraint_str -%}
+          {{ ' ' ~ constraint_str }}
+        {%- endif -%}
+      {%- endfor -%}{{ "," if not loop.last or model_constraints }}
     {% endfor -%}
     {% for c in model_constraints %}
       {{ adapter.render_raw_model_constraint(c) }}{{ "," if not loop.last }}
