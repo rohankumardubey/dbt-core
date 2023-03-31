@@ -63,6 +63,7 @@
   {{ adapter.commit() }}
 
   {{ drop_relation_if_exists(backup_relation) }}
+  {{ drop_relation_if_exists(intermediate_relation) }}
 
   {{ run_hooks(post_hooks, inside_transaction=False) }}
 
