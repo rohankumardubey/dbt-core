@@ -1,10 +1,10 @@
-{% macro db_api__create_materialized_view_as(relation, sql) %}
-    {{ adapter.dispatch('db_api__create_materialized_view_as', 'dbt')(relation, sql) }}
+{% macro db_api__materialized_view__create(relation, sql) %}
+    {{ adapter.dispatch('db_api__materialized_view__create', 'dbt')(relation, sql) }}
 {% endmacro %}
 
-{% macro default_db_api__create_materialized_view_as(relation, sql) -%}
+{% macro default_db_api__materialized_view__create(relation, sql) -%}
 
     {{ exceptions.raise_not_implemented(
-    'db_api__create_materialized_view_as macro not implemented for adapter '+adapter.type()) }}
+    'db_api__materialized_view__create macro not implemented for adapter '+adapter.type()) }}
 
 {% endmacro %}
