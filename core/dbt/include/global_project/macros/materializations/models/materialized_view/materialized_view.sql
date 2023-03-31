@@ -42,7 +42,7 @@
       {% set build_sql = strategy__materialized_view__create(target_relation, sql) %}
   {% elif full_refresh_mode or existing_relation.type != 'view' %}
       {% do adapter.rename_relation(target_relation, backup_relation) %}
-      {% set build_sql = strategy__materialized_view__create(target_relation, sql) %}
+      {% set build_sql = strategy__materialized_view__full_refresh(target_relation, sql) %}
   {% else %}
       {% set build_sql = strategy__materialized_view__full_refresh(target_relation) %}
   {% endif %}
