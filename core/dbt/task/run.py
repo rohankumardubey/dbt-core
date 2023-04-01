@@ -14,6 +14,7 @@ from .printer import (
 from datetime import datetime
 from dbt import tracking
 from dbt import utils
+from dbt.flags import get_flags
 from dbt.adapters.base import BaseRelation
 from dbt.clients.jinja import MacroGenerator
 from dbt.context.providers import generate_runtime_model_context
@@ -430,7 +431,10 @@ class RunTask(CompileTask):
         with adapter.connection_named("master"):
             required_schemas = self.get_model_schemas(adapter, selected_uids)
             self.create_schemas(adapter, required_schemas)
-            self.populate_adapter_cache(adapter, required_schemas)
+            if get_flags().CACHE_SELECTED_ONLY is True:
+                self.populate_adapter_cache(adapter, required_schemas)
+            else:
+                self.populate_adapter_cache(adapter)
             self.defer_to_manifest(adapter, selected_uids)
             self.safe_run_hooks(adapter, RunHookType.Start, {})
 

@@ -372,10 +372,7 @@ class GraphRunnableTask(ConfiguredTask):
 
     def populate_adapter_cache(self, adapter, required_schemas: Set[BaseRelation] = None):
         start_populate_cache = time.perf_counter()
-        if get_flags().CACHE_SELECTED_ONLY is True:
-            adapter.set_relations_cache(self.manifest, required_schemas=required_schemas)
-        else:
-            adapter.set_relations_cache(self.manifest)
+        adapter.set_relations_cache(self.manifest, required_schemas=required_schemas)
         cache_populate_time = time.perf_counter() - start_populate_cache
         if dbt.tracking.active_user is not None:
             dbt.tracking.track_runnable_timing(
@@ -384,6 +381,11 @@ class GraphRunnableTask(ConfiguredTask):
 
     def before_run(self, adapter, selected_uids: AbstractSet[str]):
         with adapter.connection_named("master"):
+            if get_flags().CACHE_SELECTED_ONLY is True:
+                required_schemas = self.get_model_schemas(adapter, selected_uids)
+                self.populate_adapter_cache(adapter, required_schemas)
+            else:
+                self.populate_adapter_cache(adapter)
             self.populate_adapter_cache(adapter)
             self.defer_to_manifest(adapter, selected_uids)
 
