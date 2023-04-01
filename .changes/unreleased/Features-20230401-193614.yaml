@@ -1,0 +1,6 @@
+kind: Features
+body: 'New command: ''dbt clone'''
+time: 2023-04-01T19:36:14.622217+02:00
+custom:
+  Author: jtcohen6
+  Issue: "7256"
