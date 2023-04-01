@@ -48,6 +48,7 @@ import dbt.contracts.graph.nodes
 from .utils import replace_config
 
 
+# TODO: possibly change `sql` arg to `code`
 def make_model(
     pkg,
     name,
@@ -60,6 +61,7 @@ def make_model(
     config_kwargs=None,
     fqn_extras=None,
     depends_on_macros=None,
+    language="sql",
 ):
     if refs is None:
         refs = []
@@ -68,7 +70,7 @@ def make_model(
     if tags is None:
         tags = []
     if path is None:
-        path = f"{name}.sql"
+        path = f"{name}.{language}"
     if alias is None:
         alias = name
     if config_kwargs is None:
@@ -92,7 +94,7 @@ def make_model(
         depends_on_nodes.append(src.unique_id)
 
     return ModelNode(
-        language="sql",
+        language=language,
         raw_code=sql,
         database="dbt",
         schema="dbt_schema",
@@ -505,6 +507,19 @@ def table_model(ephemeral_model):
 
 
 @pytest.fixture
+def table_model_prql(seed):
+    return make_model(
+        "pkg",
+        "table_model_prql",
+        "from (dbt source employees)",
+        config_kwargs={"materialized": "table"},
+        refs=[seed],
+        tags=[],
+        path="subdirectory/table_model.prql",
+    )
+
+
+@pytest.fixture
 def table_model_py(seed):
     return make_model(
         "pkg",
@@ -660,6 +675,7 @@ def manifest(
     ephemeral_model,
     view_model,
     table_model,
+    table_model_prql,
     table_model_py,
     table_model_csv,
     ext_source,
@@ -748,6 +764,7 @@ def test_select_fqn(manifest):
     assert search_manifest_using_method(manifest, method, "pkg") == {
         "union_model",
         "table_model",
+        "table_model_prql",
         "table_model_py",
         "table_model_csv",
         "view_model",
@@ -774,6 +791,7 @@ def test_select_fqn(manifest):
     # single wildcard
     assert search_manifest_using_method(manifest, method, "pkg.t*") == {
         "table_model",
+        "table_model_prql",
         "table_model_py",
         "table_model_csv",
     }
@@ -911,6 +929,9 @@ def test_select_file(manifest):
     assert search_manifest_using_method(manifest, method, "table_model.sql") == {"table_model"}
     assert search_manifest_using_method(manifest, method, "table_model.py") == {"table_model_py"}
     assert search_manifest_using_method(manifest, method, "table_model.csv") == {"table_model_csv"}
+    assert search_manifest_using_method(manifest, method, "table_model.prql") == {
+        "table_model_prql"
+    }
     assert search_manifest_using_method(manifest, method, "union_model.sql") == {
         "union_model",
         "mynamespace.union_model",
@@ -929,6 +950,7 @@ def test_select_package(manifest):
     assert search_manifest_using_method(manifest, method, "pkg") == {
         "union_model",
         "table_model",
+        "table_model_prql",
         "table_model_py",
         "table_model_csv",
         "view_model",
