@@ -129,8 +129,23 @@ class CloneTask(GraphRunnableTask):
             schemas_to_cache = self.get_model_schemas(adapter, selected_uids)
             self.populate_adapter_cache(adapter, schemas_to_cache)
 
+    @property
+    def resource_types(self):
+        if not self.args.resource_types:
+            return NodeType.refable()
+
+        values = set(self.args.resource_types)
+
+        if "all" in values:
+            values.remove("all")
+            values.update(NodeType.refable())
+
+        values = [NodeType(val) for val in values if val in NodeType.refable()]
+
+        return list(values)
+
     def get_node_selector(self) -> ResourceTypeSelector:
-        resource_types = NodeType.refable()
+        resource_types = self.resource_types
 
         if self.manifest is None or self.graph is None:
             raise DbtInternalError("manifest and graph must be set to get perform node selection")

@@ -95,6 +95,9 @@
       -- reuse the view materialization
       -- TODO: support actual dispatch for materialization macros
       {% set search_name = "materialization_view_" ~ adapter.type() %}
+      {% if not search_name in context %}
+          {% set search_name = "materialization_view_default" %}
+      {% endif %}
       {% set materialization_macro = context[search_name] %}
       {% set relations = materialization_macro() %}
       {{ return(relations) }}

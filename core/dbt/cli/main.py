@@ -307,6 +307,7 @@ def compile(ctx, **kwargs):
 @p.profile
 @p.profiles_dir
 @p.project_dir
+@p.resource_type
 @p.select
 @p.selector
 @p.state  # required

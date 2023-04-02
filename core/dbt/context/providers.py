@@ -1369,11 +1369,7 @@ class ModelContext(ProviderContext):
         production version (via a --state artifact), access the Relation
         object for that stateful other
         """
-        if (
-            # non-refable nodes don't have this attr
-            self.model.resource_type.refable()
-            and self.model.state_relation  # type: ignore
-        ):
+        if getattr(self.model, "state_relation", None):
             return self.db_wrapper.Relation.create_from_node(
                 self.config, self.model.state_relation  # type: ignore
             )

@@ -272,3 +272,68 @@ class TestDeferStateDeletedUpstream(BaseDeferState):
         )
         results = run_dbt(["test", "--state", "state", "--defer", "--favor-state"])
         assert other_schema not in results[0].node.compiled_code
+
+
+get_schema_name_sql = """
+{% macro generate_schema_name(custom_schema_name, node) -%}
+    {%- set default_schema = target.schema -%}
+
+    {%- if custom_schema_name is not none -%}
+        {{ return(default_schema ~ '_' ~ custom_schema_name|trim) }}
+
+    -- put seeds into a separate schema in "prod", to verify that cloning in "dev" still works
+    {%- elif target.name == 'default' and node.resource_type == 'seed' -%}
+        {{ return(default_schema ~ '_' ~ 'seeds') }}
+
+    {%- else -%}
+        {{ return(default_schema) }}
+    {%- endif -%}
+
+{%- endmacro %}
+"""
+
+
+class TestCloneToOther(BaseDeferState):
+    def build_and_save_state(self):
+        results = run_dbt(["build"])
+        assert len(results) == 6
+
+        # copy files
+        self.copy_state()
+
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {
+            "macros.sql": macros_sql,
+            "infinite_macros.sql": infinite_macros_sql,
+            "get_schema_name.sql": get_schema_name_sql,
+        }
+
+    def test_clone(self, project, unique_schema, other_schema):
+        project.create_test_schema(other_schema)
+        self.build_and_save_state()
+
+        clone_args = ["clone", "--state", "state", "--target", "otherschema"]
+
+        results = run_dbt(clone_args)
+        # TODO: need an "adapter zone" version of this test that checks to see
+        # how many of the cloned objects are "pointers" (views) versus "true clones" (tables)
+        # e.g. on Postgres we expect to see 4 views
+        # whereas on Snowflake we'd expect to see 3 cloned tables + 1 view
+        assert [r.message for r in results] == ["CREATE VIEW"] * 4
+        schema_relations = project.adapter.list_relations(
+            database=project.database, schema=other_schema
+        )
+        assert [r.type for r in schema_relations] == ["view"] * 4
+
+        # objects already exist, so this is a no-op
+        results = run_dbt(clone_args)
+        assert [r.message for r in results] == ["No-op"] * 4
+
+        # recreate all objects
+        results = run_dbt(clone_args + ["--full-refresh"])
+        assert [r.message for r in results] == ["CREATE VIEW"] * 4
+
+        # select only models this time
+        results = run_dbt(clone_args + ["--resource-type", "model"])
+        assert len(results) == 2
