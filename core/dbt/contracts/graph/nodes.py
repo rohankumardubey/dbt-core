@@ -314,7 +314,7 @@ class ParsedNode(NodeInfoMixin, ParsedNodeMandatory, SerializableType):
     @classmethod
     def _deserialize(cls, dct: Dict[str, int]):
         # The serialized ParsedNodes do not differ from each other
-        # in fields that would allow 'from_dict' to distinguis
+        # in fields that would allow 'from_dict' to distinguish
         # between them.
         resource_type = dct["resource_type"]
         if resource_type == "model":
