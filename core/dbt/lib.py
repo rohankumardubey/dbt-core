@@ -3,7 +3,6 @@ from dbt.config.project import Project
 from dbt.contracts.results import RunningStatus, collect_timing_info
 from dbt.events.functions import fire_event
 from dbt.events.types import NodeCompiling, NodeExecuting
-from dbt.exceptions import DbtRuntimeError
 from dbt.task.sql import SqlCompileRunner
 from dataclasses import dataclass
 from dbt.cli.resolvers import default_profiles_dir
@@ -20,6 +19,7 @@ class RuntimeArgs:
     target: str
 
 
+# TODO remove when switch to new dbt compile
 class SqlCompileRunnerNoIntrospection(SqlCompileRunner):
     def compile_and_execute(self, manifest, ctx):
         """
@@ -62,12 +62,14 @@ class SqlCompileRunnerNoIntrospection(SqlCompileRunner):
         return result
 
 
+# TODO remove when we can pass in params to dbt runner and load manifest switch to use dbt parse
 def load_profile_project(project_dir, profile_name_override=None):
     profile = load_profile(project_dir, {}, profile_name_override)
     project = load_project(project_dir, False, profile, {})
     return profile, project
 
 
+# TODO remove when we can pass in params to dbt runner and load manifest switch to use dbt parse
 def get_dbt_config(project_dir, args=None, single_threaded=False):
     from dbt.config.runtime import RuntimeConfig
     import dbt.adapters.factory
@@ -111,45 +113,7 @@ def get_dbt_config(project_dir, args=None, single_threaded=False):
     return config
 
 
-def get_task_by_type(type):
-    from dbt.task.run import RunTask
-    from dbt.task.list import ListTask
-    from dbt.task.seed import SeedTask
-    from dbt.task.test import TestTask
-    from dbt.task.build import BuildTask
-    from dbt.task.snapshot import SnapshotTask
-    from dbt.task.run_operation import RunOperationTask
-
-    if type == "run":
-        return RunTask
-    elif type == "test":
-        return TestTask
-    elif type == "list":
-        return ListTask
-    elif type == "seed":
-        return SeedTask
-    elif type == "build":
-        return BuildTask
-    elif type == "snapshot":
-        return SnapshotTask
-    elif type == "run_operation":
-        return RunOperationTask
-
-    raise DbtRuntimeError("not a valid task")
-
-
-def create_task(type, args, manifest, config):
-    task = get_task_by_type(type)
-
-    def no_op(*args, **kwargs):
-        pass
-
-    task = task(args, config)
-    task.load_manifest = no_op
-    task.manifest = manifest
-    return task
-
-
+# TODO remove when the bottom two functions are removed
 def _get_operation_node(manifest, project_path, sql, node_name):
     from dbt.parser.manifest import process_node
     from dbt.parser.sql import SqlBlockParser
@@ -168,6 +132,7 @@ def _get_operation_node(manifest, project_path, sql, node_name):
     return config, sql_node, adapter
 
 
+# TODO remove when switch over to new dbt compile
 def compile_sql(manifest, project_path, sql, node_name="query"):
     config, node, adapter = _get_operation_node(manifest, project_path, sql, node_name)
     allow_introspection = str(os.environ.get("__DBT_ALLOW_INTROSPECTION", "1")).lower() in (
@@ -183,6 +148,7 @@ def compile_sql(manifest, project_path, sql, node_name="query"):
     return runner.safe_run(manifest)
 
 
+# TODO remove when switch over to new dbt show
 def execute_sql(manifest, project_path, sql, node_name="query"):
     from dbt.task.sql import SqlExecuteRunner
 
@@ -193,6 +159,7 @@ def execute_sql(manifest, project_path, sql, node_name="query"):
     return runner.safe_run(manifest)
 
 
+# TODO remove when we return a manifest from compile command
 def parse_to_manifest(config):
     from dbt.parser.manifest import ManifestLoader
 
