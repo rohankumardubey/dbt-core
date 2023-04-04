@@ -1,5 +1,5 @@
 import pytest
-from dbt.exceptions import ParsingError
+from dbt.exceptions import ParsingError, ValidationError
 from dbt.tests.util import run_dbt, get_manifest, get_artifact, run_dbt_and_capture
 
 my_model_sql = """
@@ -19,7 +19,7 @@ my_model_contract_sql = """
 {{
   config(
     materialized = "table",
-    contract = true
+    contract = {"enforced": true}
   )
 }}
 
@@ -33,7 +33,7 @@ my_model_contract_disabled_sql = """
 {{
   config(
     materialized = "table",
-    contract = false
+    contract = {"enforced": false}
   )
 }}
 
@@ -46,7 +46,20 @@ select
 my_incremental_model_sql = """
 {{
   config(
-    materialized = "Incremental"
+    materialized = "incremental"
+  )
+}}
+
+select
+  1 as id,
+  'blue' as color,
+  cast('2019-01-01' as date) as date_day
+"""
+
+my_ephemeral_model_sql = """
+{{
+  config(
+    materialized = "ephemeral"
   )
 }}
 
@@ -75,7 +88,8 @@ version: 2
 models:
   - name: my_model
     config:
-      contract: true
+      contract:
+        enforced: true
     columns:
       - name: id
         quote: true
@@ -99,7 +113,8 @@ version: 2
 models:
   - name: my_model
     config:
-      contract: true
+      contract:
+        enforced: true
     columns:
       - name: id
         data_type: integer
@@ -116,7 +131,8 @@ models:
       - name: date_day
   - name: python_model
     config:
-      contract: true
+      contract:
+        enforced: true
     columns:
       - name: id
         data_type: integer
@@ -139,7 +155,8 @@ version: 2
 models:
   - name: my_model
     config:
-      contract: true
+      contract:
+        enforced: true
 """
 
 model_schema_complete_datatypes_yml = """
@@ -203,7 +220,7 @@ class TestModelLevelContractEnabledConfigs:
         my_model_config = model.config
         contract_actual_config = my_model_config.contract
 
-        assert contract_actual_config is True
+        assert contract_actual_config.enforced is True
 
         expected_columns = "{'id': ColumnInfo(name='id', description='hello', meta={}, data_type='integer', constraints=[ColumnLevelConstraint(type=<ConstraintType.not_null: 'not_null'>, name=None, expression=None, warn_unenforced=True, warn_unsupported=True), ColumnLevelConstraint(type=<ConstraintType.primary_key: 'primary_key'>, name=None, expression=None, warn_unenforced=True, warn_unsupported=True), ColumnLevelConstraint(type=<ConstraintType.check: 'check'>, name=None, expression='(id > 0)', warn_unenforced=True, warn_unsupported=True)], quote=True, tags=[], _extra={}), 'color': ColumnInfo(name='color', description='', meta={}, data_type='text', constraints=[], quote=None, tags=[], _extra={}), 'date_day': ColumnInfo(name='date_day', description='', meta={}, data_type='date', constraints=[], quote=None, tags=[], _extra={})}"
 
@@ -222,13 +239,7 @@ class TestModelLevelContractEnabledConfigs:
 class TestProjectContractEnabledConfigs:
     @pytest.fixture(scope="class")
     def project_config_update(self):
-        return {
-            "models": {
-                "test": {
-                    "+contract": True,
-                }
-            }
-        }
+        return {"models": {"test": {"+contract": {"enforced": True}}}}
 
     @pytest.fixture(scope="class")
     def models(self):
@@ -243,7 +254,7 @@ class TestProjectContractEnabledConfigs:
         model_id = "model.test.my_model"
         my_model_config = manifest.nodes[model_id].config
         contract_actual_config = my_model_config.contract
-        assert contract_actual_config is True
+        assert contract_actual_config.enforced is True
 
 
 class TestProjectContractEnabledConfigsError:
@@ -252,7 +263,9 @@ class TestProjectContractEnabledConfigsError:
         return {
             "models": {
                 "test": {
-                    "+contract": True,
+                    "+contract": {
+                        "enforced": True,
+                    },
                 }
             }
         }
@@ -265,13 +278,13 @@ class TestProjectContractEnabledConfigsError:
         }
 
     def test_undefined_column_type(self, project):
-        results, log_output = run_dbt_and_capture(["run", "-s", "my_model"], expect_pass=False)
+        _, log_output = run_dbt_and_capture(["run", "-s", "my_model"], expect_pass=False)
         manifest = get_manifest(project.project_root)
         model_id = "model.test.my_model"
         my_model_config = manifest.nodes[model_id].config
         contract_actual_config = my_model_config.contract
 
-        assert contract_actual_config is True
+        assert contract_actual_config.enforced is True
 
         expected_compile_error = "Please ensure that the column name and data_type are defined within the YAML configuration for the ['color'] column(s)."
 
@@ -289,7 +302,7 @@ class TestModelContractEnabledConfigs:
         model_id = "model.test.my_model"
         my_model_config = manifest.nodes[model_id].config
         contract_actual_config = my_model_config.contract
-        assert contract_actual_config is True
+        assert contract_actual_config.enforced is True
 
 
 class TestModelContractEnabledConfigsMissingDataTypes:
@@ -301,13 +314,13 @@ class TestModelContractEnabledConfigsMissingDataTypes:
         }
 
     def test_undefined_column_type(self, project):
-        results, log_output = run_dbt_and_capture(["run", "-s", "my_model"], expect_pass=False)
+        _, log_output = run_dbt_and_capture(["run", "-s", "my_model"], expect_pass=False)
         manifest = get_manifest(project.project_root)
         model_id = "model.test.my_model"
         my_model_config = manifest.nodes[model_id].config
         contract_actual_config = my_model_config.contract
 
-        assert contract_actual_config is True
+        assert contract_actual_config.enforced is True
 
         expected_compile_error = "Please ensure that the column name and data_type are defined within the YAML configuration for the ['color'] column(s)."
 
@@ -330,7 +343,7 @@ class TestModelLevelContractDisabledConfigs:
         my_model_config = manifest.nodes[model_id].config
         contract_actual_config = my_model_config.contract
 
-        assert contract_actual_config is False
+        assert contract_actual_config.enforced is False
 
 
 class TestModelLevelContractErrorMessages:
@@ -338,6 +351,23 @@ class TestModelLevelContractErrorMessages:
     def models(self):
         return {
             "my_model.sql": my_incremental_model_sql,
+            "constraints_schema.yml": model_schema_yml,
+        }
+
+    def test__config_errors(self, project):
+        with pytest.raises(ValidationError) as err_info:
+            run_dbt(["run"], expect_pass=False)
+
+        exc_str = " ".join(str(err_info.value).split())
+        expected_materialization_error = "Invalid value for on_schema_change: ignore. Models materialized as incremental with contracts enabled must set on_schema_change to 'append_new_columns'"
+        assert expected_materialization_error in str(exc_str)
+
+
+class TestModelLevelConstraintsErrorMessages:
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_ephemeral_model_sql,
             "constraints_schema.yml": model_schema_errors_yml,
         }
 
@@ -346,11 +376,9 @@ class TestModelLevelContractErrorMessages:
             run_dbt(["run"], expect_pass=False)
 
         exc_str = " ".join(str(err_info.value).split())
-        expected_materialization_error = (
-            "Materialization Error: {'materialization': 'Incremental'}"
-        )
+        expected_materialization_error = "Materialization Error: {'materialization': 'ephemeral'}"
         assert expected_materialization_error in str(exc_str)
-        # This is a compile time error and we won't get here because the materialization is parse time
+        # This is a compile time error and we won't get here because the materialization check is parse time
         expected_empty_data_type_error = "Columns with `data_type` Blank/Null not allowed on contracted models. Columns Blank/Null: ['date_day']"
         assert expected_empty_data_type_error not in str(exc_str)
 
