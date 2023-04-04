@@ -41,9 +41,9 @@
   {% if existing_relation is none %}
       {% set build_sql = strategy__materialized_view__create(target_relation, sql) %}
   {% elif full_refresh_mode or existing_relation.type != 'view' %}
-      {% set build_sql = strategy__materialized_view__full__refresh(target_relation, backup_relation, sql) %}
+      {% set build_sql = strategy__materialized_view__full_refresh(target_relation, sql,  backup_relation, intermediate_relation) %}
   {% else %}
-      {% set build_sql = strategy__materialized_view__full__refresh(target_relation) %}
+      {% set build_sql = strategy__materialized_view__full_refresh(target_relation) %}
   {% endif %}
 
     -- possible conditional wrapper for build_sql statement based on configs as a option?
