@@ -9,7 +9,7 @@
 {% macro table_columns_and_constraints() %}
   {# loop through user_provided_columns to create DDL with data types and constraints #}
     {%- set user_provided_columns = model['columns'] -%}
-    {%- set model_constraints = model['constraints'] -%}
+    {%- set raw_model_constraints = adapter.render_raw_model_constraints(model['constraints']) -%}
     (
     {% for i in user_provided_columns %}
       {%- set col = user_provided_columns[i] -%}
@@ -18,12 +18,12 @@
       {%- for c in constraints -%}
         {%- set constraint_str = adapter.render_raw_column_constraint(c) -%}
         {%- if constraint_str -%}
-          {{ ' ' ~ constraint_str }}
+        {{ ' ' ~ constraint_str }}
         {%- endif -%}
-      {%- endfor -%}{{ "," if not loop.last or model_constraints }}
+      {%- endfor -%}{{ "," if not loop.last or raw_model_constraints }}
     {% endfor -%}
-    {% for c in model_constraints %}
-      {{ adapter.render_raw_model_constraint(c) }}{{ "," if not loop.last }}
+    {% for c in raw_model_constraints %}
+        {{ c }}{{ "," if not loop.last }}
     {% endfor -%}
     )
 {% endmacro %}

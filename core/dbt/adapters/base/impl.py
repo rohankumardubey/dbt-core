@@ -1309,12 +1309,16 @@ class BaseAdapter(metaclass=AdapterMeta):
 
     @available
     @classmethod
-    def render_raw_model_constraint(cls, raw_constraint: Dict[str, Any]) -> str:
+    def render_raw_model_constraints(cls, raw_constraints: Dict[str, Any]) -> str:
+        return [c for c in map(cls.render_raw_model_constraint, raw_constraints) if c is not None]
+
+    @classmethod
+    def render_raw_model_constraint(cls, raw_constraint: Dict[str, Any]) -> Optional[str]:
         constraint = cls._parse_model_constraint(raw_constraint)
         return cls.render_model_constraint(constraint)
 
     @classmethod
-    def render_model_constraint(cls, constraint: ModelLevelConstraint) -> str:
+    def render_model_constraint(cls, constraint: ModelLevelConstraint) -> Optional[str]:
         """Render the given constraint as DDL text. Should be overriden by adapters which need custom constraint
         rendering."""
         constraint_prefix = f"constraint {constraint.name} " if constraint.name else ""
@@ -1330,7 +1334,7 @@ class BaseAdapter(metaclass=AdapterMeta):
         elif constraint.type == ConstraintType.custom and constraint.expression:
             return f"{constraint_prefix}{constraint.expression}"
         else:
-            return ""
+            return None
 
 
 COLUMNS_EQUAL_SQL = """
