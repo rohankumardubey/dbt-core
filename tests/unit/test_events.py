@@ -242,7 +242,7 @@ sample_values = [
     types.DepsUpdateAvailable(version_latest=""),
     types.DepsUpToDate(),
     types.DepsListSubdirectory(subdirectory=""),
-    types.DepsNotifyUpdatesAvailable(packages=[]),
+    types.DepsNotifyUpdatesAvailable(packages=["my_pkg", "other_pkg"]),
     types.RetryExternalCall(attempt=0, max=0),
     types.RecordRetryException(exc=""),
     types.RegistryIndexProgressGETRequest(url=""),
@@ -302,7 +302,6 @@ sample_values = [
     types.NodeFinished(),
     types.QueryCancelationUnsupported(type=""),
     types.ConcurrencyLine(num_threads=0, target_name=""),
-    types.CompiledNode(node_name="", compiled=""),
     types.WritingInjectedSQLForNode(),
     types.NodeCompiling(),
     types.NodeExecuting(),
@@ -334,6 +333,8 @@ sample_values = [
     types.CommandCompleted(
         command="", success=True, elapsed=0.1, completed_at=get_json_string_utcnow()
     ),
+    types.ShowNode(node_name="", preview="", is_inline=True),
+    types.CompiledNode(node_name="", compiled="", is_inline=True),
     # W - Node testing ======================
     types.CatchableExceptionOnRun(exc=""),
     types.InternalErrorOnRun(build_path="", exc=""),
