@@ -619,11 +619,11 @@ class ManifestLoader:
 
         set_of_public_unique_ids = set(public_model_ids)
 
-        # Get the Graph object from the Compiler
-        from dbt.compilation import Compiler
+        # Get the Graph object from the Linker
+        from dbt.compilation import Linker
 
-        compiler = Compiler(self.root_project)
-        graph = compiler.get_graph(self.manifest)
+        linker = Linker()
+        graph = linker.get_graph(self.manifest)
 
         public_models = {}
         for unique_id in public_model_ids:
