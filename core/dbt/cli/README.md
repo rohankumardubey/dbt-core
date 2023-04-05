@@ -26,6 +26,15 @@ When no exceptions are raised an exit code of `0` is produced.
 - `result`: The optional result of the command invoked. This attribute can have many types, please see the definition of `DbtRunnerResult` for more information
 - `exception`: If an exception was thrown during command invocation it will be saved here, otherwise it will be `None`. Please note that the exceptions held in this attribute are not the exceptions thrown by `preflight` but instead the exceptions that `ResultExit` and `ExceptionExit` wrap
 
+Programmatic exception handling might look like the following:
+```python
+res = dbtRunner().invoke(["run"])
+if not res.success:
+    ...
+if type(res.exception) == SomeExceptionType:
+    ...
+```
+
 ## `dbt/tests/util.py`
 
 ### `run_dbt`

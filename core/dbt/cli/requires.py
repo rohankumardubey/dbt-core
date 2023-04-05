@@ -84,14 +84,15 @@ def postflight(func):
 
         try:
             result, success = func(*args, **kwargs)
+        except FailFastError as e:
+            fire_event(MainEncounteredError(exc=str(e)))
+            raise ResultExit(e.result)
+        except DbtException as e:
+            fire_event(MainEncounteredError(exc=str(e)))
+            raise ExceptionExit(e)
         except BaseException as e:
             fire_event(MainEncounteredError(exc=str(e)))
-
-            if not isinstance(e, DbtException):
-                fire_event(MainStackTrace(stack_trace=traceback.format_exc()))
-            elif isinstance(e, FailFastError):
-                raise ResultExit(e.result)
-
+            fire_event(MainStackTrace(stack_trace=traceback.format_exc()))
             raise ExceptionExit(e)
         finally:
             fire_event(

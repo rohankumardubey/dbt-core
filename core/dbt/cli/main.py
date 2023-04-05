@@ -49,14 +49,13 @@ class DbtRunnerResult:
     success: bool
 
     exception: Optional[BaseException] = None
-    result: Optional[  # None: clean, deps, init, parse, source
-        Union[
-            bool,  # debug
-            CatalogArtifact,  # docs generate
-            List[str],  # list/ls
-            RunExecutionResult,  # build, compile, run, seed, snapshot, test
-            RunOperationResultsArtifact,  # run-operation
-        ]
+    result: Union[
+        bool,  # debug
+        CatalogArtifact,  # docs generate
+        List[str],  # list/ls
+        None,  # clean, deps, init, parse, source
+        RunExecutionResult,  # build, compile, run, seed, snapshot, test
+        RunOperationResultsArtifact,  # run-operation
     ] = None
 
 
@@ -110,10 +109,10 @@ class dbtRunner:
                 success=False,
             )
         except ClickExit as e:
-            if str(e) == "0":
+            if e.exit_code == 0:
                 return DbtRunnerResult(success=True)
             return DbtRunnerResult(
-                exception=DbtInternalException(f"unhandled exit code {str(e)}"),
+                exception=DbtInternalException(f"unhandled exit code {e.exit_code}"),
                 success=False,
             )
         except BaseException as e:
