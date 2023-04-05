@@ -496,6 +496,11 @@ class Compiler:
 
         return Graph(linker.graph)
 
+    def get_graph(self, manifest: Manifest) -> Graph:
+        linker = Linker()
+        self.link_graph(linker, manifest)
+        return Graph(linker.graph)
+
     # writes the "compiled_code" into the target/compiled directory
     def _write_node(self, node: ManifestSQLNode) -> ManifestSQLNode:
         if not node.extra_ctes_injected or node.resource_type in (

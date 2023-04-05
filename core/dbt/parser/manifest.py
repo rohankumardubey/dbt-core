@@ -71,6 +71,7 @@ from dbt.contracts.graph.nodes import (
     ResultNode,
 )
 from dbt.contracts.util import Writable
+from dbt.contracts.publication import Publication, PublicationMetadata, PublicModel
 from dbt.exceptions import TargetNotFoundError, AmbiguousAliasError
 from dbt.parser.base import Parser
 from dbt.parser.analysis import AnalysisParser
@@ -443,6 +444,7 @@ class ManifestLoader:
 
             # write out the fully parsed manifest
             self.write_manifest_for_partial_parse()
+            self.write_artifacts()
 
         return self.manifest
 
@@ -597,6 +599,60 @@ class ManifestLoader:
                 fp.write(manifest_msgpack)
         except Exception:
             raise
+
+    def write_artifacts(self):
+        # write out manifest.json
+        # TODO: check for overlap with parse command writing manifest
+        write_manifest(self.manifest, self.root_project.target_path)
+
+        # build publication metadata
+        metadata = PublicationMetadata(
+            adapter_type=self.root_project.credentials.type,
+            quoting=self.root_project.quoting,
+        )
+
+        # get a list of public model ids first so it can be used in constructing dependencies
+        public_model_ids = []
+        for node in self.manifest.nodes.values():
+            if node.resource_type == NodeType.Model and node.access == AccessType.Public:
+                public_model_ids.append(node.unique_id)
+
+        set_of_public_unique_ids = set(public_model_ids)
+
+        # Get the Graph object from the Compiler
+        from dbt.compilation import Compiler
+
+        compiler = Compiler(self.root_project)
+        graph = compiler.get_graph(self.manifest)
+
+        public_models = {}
+        for unique_id in public_model_ids:
+            model = self.manifest.nodes[unique_id]
+            # public_dependencies is the intersection of all parent nodes plus public nodes
+            public_dependencies = []
+            # parents is a set
+            parents = graph.select_parents({unique_id})
+            public_dependencies = parents.intersection(set_of_public_unique_ids)
+
+            public_model = PublicModel(
+                relation_name=model.relation_name,
+                latest=False,  # not a node field yet
+                public_dependencies=list(public_dependencies),
+            )
+            public_models[unique_id] = public_model
+
+        # TODO: get dependencies from dependencies.yml. When is it loaded? here?
+        dependencies = []
+        publication = Publication(
+            metadata=metadata,
+            project_name=self.root_project.project_name,
+            public_models=public_models,
+            dependencies=dependencies,
+        )
+        # write out publication artifact <project_name>_publication.json
+        publication_file_name = f"{self.root_project.project_name}_publication.json"
+        path = os.path.join(self.root_project.target_path, publication_file_name)
+        publication.write(path)
 
     def is_partial_parsable(self, manifest: Manifest) -> Tuple[bool, Optional[str]]:
         """Compare the global hashes of the read-in parse results' values to
