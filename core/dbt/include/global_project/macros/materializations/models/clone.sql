@@ -49,13 +49,21 @@
 
   {%- set relations = {'relations': []} -%}
 
+  {%- if not state_relation -%}
+      -- nothing to do
+      {{ log("No relation found in state manifest for " ~ model.unique_id) }}
+      {{ return(relations) }}
+  {%- endif -%}
+
   {%- set existing_relation = load_cached_relation(this) -%}
-  {%- set other_existing_relation = load_cached_relation(state_relation) -%}
 
   {%- if existing_relation and not flags.FULL_REFRESH -%}
       -- noop!
+      {{ log("Relation " ~ existing_relation ~ " already exists") }}
       {{ return(relations) }}
   {%- endif -%}
+
+  {%- set other_existing_relation = load_cached_relation(state_relation) -%}
 
   -- If this is a database that can do zero-copy cloning of tables, and the other relation is a table, then this will be a table
   -- Otherwise, this will be a view

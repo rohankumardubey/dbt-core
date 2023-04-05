@@ -96,7 +96,7 @@ class CloneRunner(BaseRunner):
 
 class CloneTask(GraphRunnableTask):
     def raise_on_first_error(self):
-        return True
+        return False
 
     def get_model_schemas(self, adapter, selected_uids: Iterable[str]) -> Set[BaseRelation]:
         if self.manifest is None:
