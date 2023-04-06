@@ -271,10 +271,8 @@ models:
     constraints:
       - type: check
         expression: (id > 0)
-        clown: 1
       - type: primary_key
         columns: [ id ]
-        alphabet: abc
       - type: unique
         columns: [ color, date_day ]
         name: strange_uniqueness_requirement
