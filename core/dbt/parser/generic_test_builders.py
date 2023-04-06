@@ -9,13 +9,13 @@ from typing import (
     Tuple,
     Optional,
     List,
-    Union,
 )
 
 from dbt.clients.jinja import get_rendered, GENERIC_TEST_KWARGS_NAME
 from dbt.contracts.graph.nodes import UnpatchedSourceDefinition
 from dbt.contracts.graph.unparsed import (
     TestDef,
+    NodeVersion,
     UnparsedAnalysisUpdate,
     UnparsedMacroUpdate,
     UnparsedNodeUpdate,
@@ -204,7 +204,7 @@ class GenericTestBlock(TestBlock[Testable], Generic[Testable]):
     test: Dict[str, Any]
     column_name: Optional[str]
     tags: List[str]
-    version: Optional[Union[str, float]]
+    version: Optional[NodeVersion]
 
     @classmethod
     def from_test_block(
@@ -213,7 +213,7 @@ class GenericTestBlock(TestBlock[Testable], Generic[Testable]):
         test: Dict[str, Any],
         column_name: Optional[str],
         tags: List[str],
-        version: Optional[Union[str, float]],
+        version: Optional[NodeVersion],
     ) -> "GenericTestBlock":
         return cls(
             file=src.file,
@@ -264,7 +264,7 @@ class TestBuilder(Generic[Testable]):
         package_name: str,
         render_ctx: Dict[str, Any],
         column_name: str = None,
-        version: Optional[Union[str, float]] = None,
+        version: Optional[NodeVersion] = None,
     ) -> None:
         test_name, test_args = self.extract_test_args(test, column_name)
         self.args: Dict[str, Any] = test_args
@@ -272,7 +272,7 @@ class TestBuilder(Generic[Testable]):
             raise TestArgIncludesModelError()
         self.package_name: str = package_name
         self.target: Testable = target
-        self.version: Optional[Union[str, float]] = version
+        self.version: Optional[NodeVersion] = version
 
         self.args["model"] = self.build_model_str()
 

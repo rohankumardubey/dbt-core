@@ -55,6 +55,7 @@ from dbt.contracts.graph.unparsed import (
     UnparsedMetric,
     UnparsedSourceDefinition,
     UnparsedGroup,
+    NodeVersion,
 )
 from dbt.exceptions import (
     CompilationError,
@@ -155,7 +156,7 @@ class ParserRef:
         return refs
 
     @classmethod
-    def from_versioned_target(cls, target: Versioned, version: Union[str, float]) -> "ParserRef":
+    def from_versioned_target(cls, target: Versioned, version: NodeVersion) -> "ParserRef":
         refs = cls()
         for base_column in target.get_columns_for_version(version):
             refs._add(base_column)
@@ -201,7 +202,7 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
         return GenericTestNode.from_dict(dct)
 
     def parse_column_tests(
-        self, block: TestBlock, column: UnparsedColumn, version: Optional[Union[str, float]]
+        self, block: TestBlock, column: UnparsedColumn, version: Optional[NodeVersion]
     ) -> None:
         if not column.tests:
             return
@@ -282,7 +283,7 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
         tags: List[str],
         column_name: Optional[str],
         schema_file_id: str,
-        version: Optional[Union[str, float]],
+        version: Optional[NodeVersion],
     ) -> GenericTestNode:
         try:
             builder = TestBuilder(
@@ -487,7 +488,7 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
         target_block: TestBlock,
         test: TestDef,
         column: Optional[UnparsedColumn],
-        version: Optional[Union[str, float]],
+        version: Optional[NodeVersion],
     ) -> None:
         if isinstance(test, str):
             test = {test: {}}
@@ -1098,15 +1099,15 @@ class ModelPatchParser(NodePatchParser[UnparsedModelUpdate]):
 
                 versioned_model_patch = ParsedNodePatch(
                     name=target.name,
-                    original_file_path=versioned_model_node.original_file_path,
+                    original_file_path=target.original_file_path,
                     yaml_key=target.yaml_key,
-                    package_name=versioned_model_node.package_name,
-                    description=unparsed_version.description or versioned_model_node.description,
+                    package_name=target.package_name,
+                    description=unparsed_version.description or target.description,
                     columns=version_refs.column_info,
-                    meta=unparsed_version.meta or versioned_model_node.meta,  # TODO: merge
-                    docs=unparsed_version.docs or versioned_model_node.docs,
-                    config=unparsed_version.config,  # TODO: merge with versioned_model_node config
-                    access=target.access,  # TODO: should versioned models be able to define their own access?
+                    meta={**target.meta, **unparsed_version.meta},
+                    docs=unparsed_version.docs or target.docs,
+                    config={**target.config, **unparsed_version.config},
+                    access=target.access,  # TODO: confirm that versioned models _not_ be able to define their own access?
                     version=unparsed_version.v,
                     is_latest_version=latest_version == unparsed_version.v,
                 )

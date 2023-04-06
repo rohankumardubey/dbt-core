@@ -138,11 +138,14 @@ class HasConfig:
     config: Dict[str, Any] = field(default_factory=dict)
 
 
+NodeVersion = Union[str, float]
+
+
 @dataclass
-class UnparsedVersion(HasConfig, dbtClassMixin):
-    # TODO: Consider separate version type var
-    v: Union[str, float] = ""
+class UnparsedVersion(dbtClassMixin):
+    v: NodeVersion = ""
     description: str = ""
+    config: Dict[str, Any] = field(default_factory=dict)
     meta: Dict[str, Any] = field(default_factory=dict)
     constraints: List[Dict[str, Any]] = field(default_factory=list)
     docs: Docs = field(default_factory=Docs)
@@ -201,7 +204,7 @@ class UnparsedNodeUpdate(HasConfig, HasColumnTests, HasColumnAndTestProps, HasYa
 class UnparsedModelUpdate(UnparsedNodeUpdate):
     quote_columns: Optional[bool] = None
     access: Optional[str] = None
-    latest_version: Optional[Union[str, float]] = None
+    latest_version: Optional[NodeVersion] = None
     versions: Sequence[UnparsedVersion] = field(default_factory=list)
 
     def __post_init__(self):
@@ -214,7 +217,7 @@ class UnparsedModelUpdate(UnparsedNodeUpdate):
 
         self._version_map = {version.v: version for version in self.versions}
 
-    def get_columns_for_version(self, version: Union[str, float]) -> List[UnparsedColumn]:
+    def get_columns_for_version(self, version: NodeVersion) -> List[UnparsedColumn]:
         if version not in self._version_map:
             # TODO: internal error
             raise Exception("version not in version map")
@@ -230,7 +233,7 @@ class UnparsedModelUpdate(UnparsedNodeUpdate):
 
         return version_columns
 
-    def get_tests_for_version(self, version: Union[str, float]) -> List[TestDef]:
+    def get_tests_for_version(self, version: NodeVersion) -> List[TestDef]:
         if version not in self._version_map:
             # TODO: internal error
             raise Exception("version not in version map")

@@ -33,6 +33,7 @@ from dbt.contracts.graph.unparsed import (
     Owner,
     Quoting,
     TestDef,
+    NodeVersion,
     UnparsedSourceDefinition,
     UnparsedSourceTableDefinition,
     UnparsedColumn,
@@ -1251,7 +1252,7 @@ class ParsedPatch(HasYamlMetadata, Replaceable):
 class ParsedNodePatch(ParsedPatch):
     columns: Dict[str, ColumnInfo]
     access: Optional[str]
-    version: Optional[Union[str, float]]
+    version: Optional[NodeVersion]
     is_latest_version: Optional[bool]
 
 
