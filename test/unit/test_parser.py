@@ -42,6 +42,7 @@ from dbt.parser.models import (
 )
 from dbt.parser.schemas import (
     TestablePatchParser,
+    ModelPatchParser,
     SourceParser,
     AnalysisPatchParser,
     MacroPatchParser,
@@ -293,10 +294,10 @@ class SchemaParserTest(BaseParserTest):
 class SchemaParserSourceTest(SchemaParserTest):
     def test__read_basic_source(self):
         block = self.yaml_block_for(SINGLE_TABLE_SOURCE, "test_one.yml")
-        analysis_blocks = AnalysisPatchParser(self.parser, block, "analyses").parse()
-        model_blocks = TestablePatchParser(self.parser, block, "models").parse()
-        source_blocks = SourceParser(self.parser, block, "sources").parse()
-        macro_blocks = MacroPatchParser(self.parser, block, "macros").parse()
+        analysis_blocks = AnalysisPatchParser(self.parser, block, "analyses").parse().test_blocks
+        model_blocks = ModelPatchParser(self.parser, block, "models").parse().test_blocks
+        source_blocks = SourceParser(self.parser, block, "sources").parse().test_blocks
+        macro_blocks = MacroPatchParser(self.parser, block, "macros").parse().test_blocks
         self.assertEqual(len(analysis_blocks), 0)
         self.assertEqual(len(model_blocks), 0)
         self.assertEqual(len(source_blocks), 0)
@@ -324,10 +325,10 @@ class SchemaParserSourceTest(SchemaParserTest):
 
     def test__read_basic_source_tests(self):
         block = self.yaml_block_for(SINGLE_TABLE_SOURCE_TESTS, "test_one.yml")
-        analysis_tests = AnalysisPatchParser(self.parser, block, "analyses").parse()
-        model_tests = TestablePatchParser(self.parser, block, "models").parse()
-        source_tests = SourceParser(self.parser, block, "sources").parse()
-        macro_tests = MacroPatchParser(self.parser, block, "macros").parse()
+        analysis_tests = AnalysisPatchParser(self.parser, block, "analyses").parse().test_blocks
+        model_tests = ModelPatchParser(self.parser, block, "models").parse().test_blocks
+        source_tests = SourceParser(self.parser, block, "sources").parse().test_blocks
+        macro_tests = MacroPatchParser(self.parser, block, "macros").parse().test_blocks
         self.assertEqual(len(analysis_tests), 0)
         self.assertEqual(len(model_tests), 0)
         self.assertEqual(len(source_tests), 0)
@@ -380,10 +381,10 @@ class SchemaParserSourceTest(SchemaParserTest):
 
     def test__read_source_patch(self):
         block = self.yaml_block_for(SINGLE_TABLE_SOURCE_PATCH, "test_one.yml")
-        analysis_tests = AnalysisPatchParser(self.parser, block, "analyses").parse()
-        model_tests = TestablePatchParser(self.parser, block, "models").parse()
-        source_tests = SourceParser(self.parser, block, "sources").parse()
-        macro_tests = MacroPatchParser(self.parser, block, "macros").parse()
+        analysis_tests = AnalysisPatchParser(self.parser, block, "analyses").parse().test_blocks
+        model_tests = TestablePatchParser(self.parser, block, "models").parse().test_blocks
+        source_tests = SourceParser(self.parser, block, "sources").parse().test_blocks
+        macro_tests = MacroPatchParser(self.parser, block, "macros").parse().test_blocks
         self.assertEqual(len(analysis_tests), 0)
         self.assertEqual(len(model_tests), 0)
         self.assertEqual(len(source_tests), 0)

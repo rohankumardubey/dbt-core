@@ -103,11 +103,7 @@ TestDef = Union[Dict[str, Any], str]
 
 @dataclass
 class HasColumnAndTestProps(HasColumnProps):
-    tests: Optional[List[TestDef]] = None
-
-    def __post_init__(self):
-        if self.tests is None:
-            self.tests = []
+    tests: List[TestDef] = field(default_factory=list)
 
 
 @dataclass
@@ -143,6 +139,54 @@ class HasConfig:
 
 
 @dataclass
+class UnparsedVersion(HasConfig, dbtClassMixin):
+    # TODO: Consider separate version type var
+    v: Union[str, float] = ""
+    description: str = ""
+    meta: Dict[str, Any] = field(default_factory=dict)
+    constraints: List[Dict[str, Any]] = field(default_factory=list)
+    docs: Docs = field(default_factory=Docs)
+    defined_in: Optional[str] = None
+    tests: List[TestDef] = field(default_factory=list)
+    columns: Sequence[Union[dbt.helper_types.IncludeExclude, UnparsedColumn]] = field(
+        default_factory=list
+    )
+
+    def __lt__(self, other):
+        try:
+            v = type(other.v)(self.v)
+            return v < other.v
+        except ValueError:
+            try:
+                other_v = type(self.v)(other.v)
+                return self.v < other_v
+            except ValueError:
+                return str(self.v) < str(other.v)
+
+    @property
+    def include_exclude(self) -> dbt.helper_types.IncludeExclude:
+        return self._include_exclude
+
+    @property
+    def unparsed_columns(self) -> List:
+        return self._unparsed_columns
+
+    def __post_init__(self):
+        has_include_exclude = False
+        self._include_exclude = dbt.helper_types.IncludeExclude(include=[])
+        self._unparsed_columns = []
+        for column in self.columns:
+            if isinstance(column, dbt.helper_types.IncludeExclude):
+                if not has_include_exclude:
+                    self._include_exclude = column
+                    has_include_exclude = True
+                else:
+                    raise ParsingError("version can have at most one include/exclude element")
+            else:
+                self._unparsed_columns.append(column)
+
+
+@dataclass
 class UnparsedAnalysisUpdate(HasConfig, HasColumnDocs, HasColumnProps, HasYamlMetadata):
     access: Optional[str] = None
 
@@ -151,6 +195,47 @@ class UnparsedAnalysisUpdate(HasConfig, HasColumnDocs, HasColumnProps, HasYamlMe
 class UnparsedNodeUpdate(HasConfig, HasColumnTests, HasColumnAndTestProps, HasYamlMetadata):
     quote_columns: Optional[bool] = None
     access: Optional[str] = None
+
+
+@dataclass
+class UnparsedModelUpdate(UnparsedNodeUpdate):
+    quote_columns: Optional[bool] = None
+    access: Optional[str] = None
+    latest_version: Optional[Union[str, float]] = None
+    versions: Sequence[UnparsedVersion] = field(default_factory=list)
+
+    def __post_init__(self):
+        if self.latest_version:
+            version_values = [version.v for version in self.versions]
+            if self.latest_version not in version_values:
+                raise ParsingError(
+                    f"latest_version: {self.latest_version} is not one of versions: {version_values}"
+                )
+
+        self._version_map = {version.v: version for version in self.versions}
+
+    def get_columns_for_version(self, version: Union[str, float]) -> List[UnparsedColumn]:
+        if version not in self._version_map:
+            # TODO: internal error
+            raise Exception("version not in version map")
+
+        version_columns = []
+        unparsed_version = self._version_map[version]
+        for base_column in self.columns:
+            if unparsed_version.include_exclude.includes(base_column.name):
+                version_columns.append(base_column)
+
+        for column in unparsed_version.unparsed_columns:
+            version_columns.append(column)
+
+        return version_columns
+
+    def get_tests_for_version(self, version: Union[str, float]) -> List[TestDef]:
+        if version not in self._version_map:
+            # TODO: internal error
+            raise Exception("version not in version map")
+        unparsed_version = self._version_map[version]
+        return unparsed_version.tests or self.tests
 
 
 @dataclass

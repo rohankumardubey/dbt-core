@@ -14,6 +14,7 @@ from dbt.contracts.graph.unparsed import (
     UnparsedDocumentationFile,
     UnparsedColumn,
     UnparsedNodeUpdate,
+    UnparsedModelUpdate,
     Docs,
     UnparsedExposure,
     MaturityType,
@@ -456,6 +457,192 @@ class TestUnparsedNodeUpdate(ContractTestCase):
             "tests": ["table_test"],
             "meta": {"key": ["value1", "value2"]},
             "constraints": [],
+            "columns": [
+                {
+                    "name": "x",
+                    "description": "x description",
+                    "docs": {"show": True},
+                    "tests": [],
+                    "meta": {"key2": "value3"},
+                    "tags": [],
+                    "constraints": [],
+                },
+                {
+                    "name": "y",
+                    "description": "y description",
+                    "docs": {"show": True},
+                    "tests": ["unique", {"accepted_values": {"values": ["blue", "green"]}}],
+                    "meta": {},
+                    "tags": ["a", "b"],
+                    "constraints": [],
+                },
+            ],
+            "docs": {"show": False},
+            "config": {},
+        }
+        self.assert_symmetric(update, dct)
+        pickle.loads(pickle.dumps(update))
+
+    def test_bad_test_type(self):
+        dct = {
+            "name": "foo",
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+            "description": "a description",
+            "tests": ["table_test"],
+            "meta": {"key": ["value1", "value2"]},
+            "columns": [
+                {
+                    "name": "x",
+                    "description": "x description",
+                    "docs": {"show": True},
+                    "tests": [],
+                    "meta": {"key2": "value3"},
+                },
+                {
+                    "name": "y",
+                    "description": "y description",
+                    "docs": {"show": True},
+                    "tests": [100, {"accepted_values": {"values": ["blue", "green"]}}],
+                    "meta": {},
+                    "yaml_key": "models",
+                    "original_file_path": "/some/fake/path",
+                },
+            ],
+            "docs": {"show": True},
+        }
+        self.assert_fails_validation(dct)
+
+        dct = {
+            "name": "foo",
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+            "description": "a description",
+            "tests": ["table_test"],
+            "meta": {"key": ["value1", "value2"]},
+            "columns": [
+                # column missing a name
+                {
+                    "description": "x description",
+                    "docs": {"show": True},
+                    "tests": [],
+                    "meta": {"key2": "value3"},
+                },
+                {
+                    "name": "y",
+                    "description": "y description",
+                    "docs": {"show": True},
+                    "tests": ["unique", {"accepted_values": {"values": ["blue", "green"]}}],
+                    "meta": {},
+                    "yaml_key": "models",
+                    "original_file_path": "/some/fake/path",
+                },
+            ],
+            "docs": {"show": True},
+        }
+        self.assert_fails_validation(dct)
+
+        # missing a name
+        dct = {
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+            "description": "a description",
+            "tests": ["table_test"],
+            "meta": {"key": ["value1", "value2"]},
+            "columns": [
+                {
+                    "name": "x",
+                    "description": "x description",
+                    "docs": {"show": True},
+                    "tests": [],
+                    "meta": {"key2": "value3"},
+                },
+                {
+                    "name": "y",
+                    "description": "y description",
+                    "docs": {"show": True},
+                    "tests": ["unique", {"accepted_values": {"values": ["blue", "green"]}}],
+                    "meta": {},
+                    "yaml_key": "models",
+                    "original_file_path": "/some/fake/path",
+                },
+            ],
+            "docs": {"show": True},
+        }
+        self.assert_fails_validation(dct)
+
+
+class TestUnparsedModelUpdate(ContractTestCase):
+    ContractType = UnparsedModelUpdate
+
+    def test_defaults(self):
+        minimum = self.ContractType(
+            name="foo",
+            yaml_key="models",
+            original_file_path="/some/fake/path",
+            package_name="test",
+        )
+        from_dict = {
+            "name": "foo",
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+        }
+        to_dict = {
+            "name": "foo",
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+            "columns": [],
+            "description": "",
+            "docs": {"show": True},
+            "tests": [],
+            "meta": {},
+            "config": {},
+            "constraints": [],
+            "versions": [],
+        }
+        self.assert_from_dict(minimum, from_dict)
+        self.assert_to_dict(minimum, to_dict)
+
+    def test_contents(self):
+        update = self.ContractType(
+            name="foo",
+            yaml_key="models",
+            original_file_path="/some/fake/path",
+            package_name="test",
+            description="a description",
+            tests=["table_test"],
+            meta={"key": ["value1", "value2"]},
+            columns=[
+                UnparsedColumn(
+                    name="x",
+                    description="x description",
+                    meta={"key2": "value3"},
+                ),
+                UnparsedColumn(
+                    name="y",
+                    description="y description",
+                    tests=["unique", {"accepted_values": {"values": ["blue", "green"]}}],
+                    meta={},
+                    tags=["a", "b"],
+                ),
+            ],
+            docs=Docs(show=False),
+        )
+        dct = {
+            "name": "foo",
+            "yaml_key": "models",
+            "original_file_path": "/some/fake/path",
+            "package_name": "test",
+            "description": "a description",
+            "tests": ["table_test"],
+            "meta": {"key": ["value1", "value2"]},
+            "constraints": [],
+            "versions": [],
             "columns": [
                 {
                     "name": "x",

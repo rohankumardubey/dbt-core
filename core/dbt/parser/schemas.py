@@ -4,6 +4,7 @@ import pathlib
 
 from abc import ABCMeta, abstractmethod
 from typing import Iterable, Dict, Any, Union, List, Optional, Generic, TypeVar, Type
+from dataclasses import dataclass, field
 
 from dbt.dataclass_schema import ValidationError, dbtClassMixin
 
@@ -49,6 +50,7 @@ from dbt.contracts.graph.unparsed import (
     UnparsedColumn,
     UnparsedMacroUpdate,
     UnparsedNodeUpdate,
+    UnparsedModelUpdate,
     UnparsedExposure,
     UnparsedMetric,
     UnparsedSourceDefinition,
@@ -80,7 +82,9 @@ from dbt.parser.generic_test_builders import (
     TargetBlock,
     YamlBlock,
     TestBlock,
+    VersionedTestBlock,
     Testable,
+    Versioned,
 )
 from dbt.utils import get_pseudo_test_path, coerce_dict_str, md5
 
@@ -150,6 +154,13 @@ class ParserRef:
             refs._add(column)
         return refs
 
+    @classmethod
+    def from_versioned_target(cls, target: Versioned, version: Union[str, float]) -> "ParserRef":
+        refs = cls()
+        for base_column in target.get_columns_for_version(version):
+            refs._add(base_column)
+        return refs
+
 
 def _trimmed(inp: str) -> str:
     if len(inp) < 50:
@@ -189,12 +200,14 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
             GenericTestNode.validate(dct)
         return GenericTestNode.from_dict(dct)
 
-    def parse_column_tests(self, block: TestBlock, column: UnparsedColumn) -> None:
+    def parse_column_tests(
+        self, block: TestBlock, column: UnparsedColumn, version: Optional[Union[str, float]]
+    ) -> None:
         if not column.tests:
             return
 
         for test in column.tests:
-            self.parse_test(block, test, column)
+            self.parse_test(block, test, column, version)
 
     def create_test_node(
         self,
@@ -269,12 +282,14 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
         tags: List[str],
         column_name: Optional[str],
         schema_file_id: str,
+        version: Optional[Union[str, float]],
     ) -> GenericTestNode:
         try:
             builder = TestBuilder(
                 test=test,
                 target=target,
                 column_name=column_name,
+                version=version,
                 package_name=target.package_name,
                 render_ctx=self.render_ctx,
             )
@@ -438,6 +453,7 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
             tags=block.tags,
             column_name=block.column_name,
             schema_file_id=block.file.file_id,
+            version=block.version,
         )
         self.add_test_node(block, node)
         return node
@@ -471,6 +487,7 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
         target_block: TestBlock,
         test: TestDef,
         column: Optional[UnparsedColumn],
+        version: Optional[Union[str, float]],
     ) -> None:
         if isinstance(test, str):
             test = {test: {}}
@@ -490,15 +507,27 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
             test=test,
             column_name=column_name,
             tags=column_tags,
+            version=version,
         )
         self.parse_node(block)
 
     def parse_tests(self, block: TestBlock) -> None:
         for column in block.columns:
-            self.parse_column_tests(block, column)
+            self.parse_column_tests(block, column, None)
 
         for test in block.tests:
-            self.parse_test(block, test, None)
+            self.parse_test(block, test, None, None)
+
+    def parse_versioned_tests(self, block: VersionedTestBlock) -> None:
+        if not block.target.versions:
+            self.parse_tests(block)
+        else:
+            for version in block.target.versions:
+                for column in block.target.get_columns_for_version(version.v):
+                    self.parse_column_tests(block, column, version.v)
+
+                for test in block.target.get_tests_for_version(version.v):
+                    self.parse_test(block, test, None, version.v)
 
     def parse_file(self, block: FileBlock, dct: Dict = None) -> None:
         assert isinstance(block.file, SchemaSourceFile)
@@ -514,25 +543,24 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
             # There are 7 kinds of parsers:
             # Model, Seed, Snapshot, Source, Macro, Analysis, Exposures
 
-            # NonSourceParser.parse(), TestablePatchParser is a variety of
-            # NodePatchParser
+            # ModelPatchParser.parse()
             if "models" in dct:
                 # the models are already in the manifest as nodes when we reach this code,
                 # even if they are disabled in the schema file
-                parser = TestablePatchParser(self, yaml_block, "models")
-                for test_block in parser.parse():
-                    self.parse_tests(test_block)
+                model_parse_result = ModelPatchParser(self, yaml_block, "models").parse()
+                for versioned_test_block in model_parse_result.versioned_test_blocks:
+                    self.parse_versioned_tests(versioned_test_block)
 
             # NonSourceParser.parse()
             if "seeds" in dct:
-                parser = TestablePatchParser(self, yaml_block, "seeds")
-                for test_block in parser.parse():
+                seed_parse_result = TestablePatchParser(self, yaml_block, "seeds").parse()
+                for test_block in seed_parse_result.test_blocks:
                     self.parse_tests(test_block)
 
             # NonSourceParser.parse()
             if "snapshots" in dct:
-                parser = TestablePatchParser(self, yaml_block, "snapshots")
-                for test_block in parser.parse():
+                snapshot_parse_result = TestablePatchParser(self, yaml_block, "snapshots").parse()
+                for test_block in snapshot_parse_result.test_blocks:
                     self.parse_tests(test_block)
 
             # This parser uses SourceParser.parse() which doesn't return
@@ -569,10 +597,20 @@ class SchemaParser(SimpleParser[GenericTestBlock, GenericTestNode]):
 
 
 Parsed = TypeVar("Parsed", UnpatchedSourceDefinition, ParsedNodePatch, ParsedMacroPatch)
-NodeTarget = TypeVar("NodeTarget", UnparsedNodeUpdate, UnparsedAnalysisUpdate)
+NodeTarget = TypeVar("NodeTarget", UnparsedNodeUpdate, UnparsedAnalysisUpdate, UnparsedModelUpdate)
 NonSourceTarget = TypeVar(
-    "NonSourceTarget", UnparsedNodeUpdate, UnparsedAnalysisUpdate, UnparsedMacroUpdate
+    "NonSourceTarget",
+    UnparsedNodeUpdate,
+    UnparsedAnalysisUpdate,
+    UnparsedMacroUpdate,
+    UnparsedModelUpdate,
 )
+
+
+@dataclass
+class ParseResult:
+    test_blocks: List[TestBlock] = field(default_factory=list)
+    versioned_test_blocks: List[VersionedTestBlock] = field(default_factory=list)
 
 
 # abstract base class (ABCMeta)
@@ -658,7 +696,7 @@ class YamlReader(metaclass=ABCMeta):
 
 class YamlDocsReader(YamlReader):
     @abstractmethod
-    def parse(self) -> List[TestBlock]:
+    def parse(self) -> ParseResult:
         raise NotImplementedError("parse is abstract")
 
 
@@ -680,7 +718,7 @@ class SourceParser(YamlDocsReader):
     # to create UnparsedSourceDefinition objects. They are then turned
     # into UnpatchedSourceDefinition objects in 'add_source_definitions'
     # or SourcePatch objects in 'add_source_patch'
-    def parse(self) -> List[TestBlock]:
+    def parse(self) -> ParseResult:
         # get a verified list of dicts for the key handled by this parser
         for data in self.get_key_dicts():
             data = self.project.credentials.translate_aliases(data, recurse=True)
@@ -700,7 +738,7 @@ class SourceParser(YamlDocsReader):
             else:
                 source = self._target_from_dict(UnparsedSourceDefinition, data)
                 self.add_source_definitions(source)
-        return []
+        return ParseResult()
 
     def add_source_definitions(self, source: UnparsedSourceDefinition) -> None:
         package_name = self.project.project_name
@@ -742,9 +780,13 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
     def parse_patch(self, block: TargetBlock[NonSourceTarget], refs: ParserRef) -> None:
         raise NotImplementedError("parse_patch is abstract")
 
-    def parse(self) -> List[TestBlock]:
+    def parse(self) -> ParseResult:
         node: NonSourceTarget
+        # This will always be empty if the node a macro or analysis
         test_blocks: List[TestBlock] = []
+        # This will always be empty if the node is _not_ a model
+        versioned_test_blocks: List[VersionedTestBlock] = []
+
         # get list of 'node' objects
         # UnparsedNodeUpdate (TestablePatchParser, models, seeds, snapshots)
         #      = HasColumnTests, HasTests
@@ -758,8 +800,11 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
             # or a TestBlock (all of the others)
             node_block = self.get_block(node)
             if isinstance(node_block, TestBlock):
-                # TestablePatchParser = models, seeds, snapshots
+                # TestablePatchParser = seeds, snapshots
                 test_blocks.append(node_block)
+            if isinstance(node_block, VersionedTestBlock):
+                # models
+                versioned_test_blocks.append(node_block)
             if isinstance(node, (HasColumnDocs, HasColumnTests)):
                 # UnparsedNodeUpdate and UnparsedAnalysisUpdate
                 refs: ParserRef = ParserRef.from_target(node)
@@ -769,8 +814,7 @@ class NonSourceParser(YamlDocsReader, Generic[NonSourceTarget, Parsed]):
             # There's no unique_id on the node yet so cannot add to disabled dict
             self.parse_patch(node_block, refs)
 
-        # This will always be empty if the node a macro or analysis
-        return test_blocks
+        return ParseResult(test_blocks, versioned_test_blocks)
 
     def get_unparsed_target(self) -> Iterable[NonSourceTarget]:
         path = self.yaml.path.original_file_path
@@ -862,6 +906,8 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
             docs=block.target.docs,
             config=block.target.config,
             access=block.target.access,
+            version=None,
+            is_latest_version=None,
         )
         assert isinstance(self.yaml.file, SchemaSourceFile)
         source_file: SchemaSourceFile = self.yaml.file
@@ -997,12 +1043,79 @@ class NodePatchParser(NonSourceParser[NodeTarget, ParsedNodePatch], Generic[Node
         return language_error_msg_payload
 
 
+# TestablePatchParser = seeds, snapshots
 class TestablePatchParser(NodePatchParser[UnparsedNodeUpdate]):
     def get_block(self, node: UnparsedNodeUpdate) -> TestBlock:
         return TestBlock.from_yaml_block(self.yaml, node)
 
     def _target_type(self) -> Type[UnparsedNodeUpdate]:
         return UnparsedNodeUpdate
+
+
+class ModelPatchParser(NodePatchParser[UnparsedModelUpdate]):
+    def get_block(self, node: UnparsedModelUpdate) -> VersionedTestBlock:
+        return VersionedTestBlock.from_yaml_block(self.yaml, node)
+
+    def parse_patch(self, block: TargetBlock[UnparsedModelUpdate], refs: ParserRef) -> None:
+        target = block.target
+        versions = target.versions
+        if not versions:
+            super().parse_patch(block, refs)
+        else:
+            # TODO: WrongResourceSchemaFile, DbtInternalError from  base?
+            assert isinstance(self.yaml.file, SchemaSourceFile)
+            source_file: SchemaSourceFile = self.yaml.file
+            latest_version = target.latest_version or max(versions)
+            for unparsed_version in versions:
+                versioned_model_name = (
+                    unparsed_version.defined_in or f"{block.name}_v{unparsed_version.v}"
+                )
+                # ref lookup without version - version is not set yet
+                versioned_model_unique_id = self.manifest.ref_lookup.get_unique_id(
+                    versioned_model_name, None
+                )
+                if versioned_model_unique_id is None:
+                    warn_or_error(
+                        NoNodeForYamlKey(
+                            patch_name=versioned_model_name,
+                            yaml_key=target.yaml_key,
+                            file_path=source_file.path.original_file_path,
+                        )
+                    )
+                    continue
+                versioned_model_node = self.manifest.nodes.pop(versioned_model_unique_id)
+                versioned_model_node.unique_id = (
+                    f"model.{target.package_name}.{target.name}.v{unparsed_version.v}"
+                )
+                versioned_model_node.fqn[-1] = target.name
+                versioned_model_node.fqn.append(f"v{unparsed_version.v}")
+                self.manifest.add_node_nofile(versioned_model_node)
+
+                # flatten columns based on include/exclude
+                version_refs: ParserRef = ParserRef.from_versioned_target(
+                    block.target, unparsed_version.v
+                )
+
+                versioned_model_patch = ParsedNodePatch(
+                    name=target.name,
+                    original_file_path=versioned_model_node.original_file_path,
+                    yaml_key=target.yaml_key,
+                    package_name=versioned_model_node.package_name,
+                    description=unparsed_version.description or versioned_model_node.description,
+                    columns=version_refs.column_info,
+                    meta=unparsed_version.meta or versioned_model_node.meta,  # TODO: merge
+                    docs=unparsed_version.docs or versioned_model_node.docs,
+                    config=unparsed_version.config,  # TODO: merge with versioned_model_node config
+                    access=target.access,  # TODO: should versioned models be able to define their own access?
+                    version=unparsed_version.v,
+                    is_latest_version=latest_version == unparsed_version.v,
+                )
+                versioned_model_node.patch(versioned_model_patch)
+                self.patch_node_config(versioned_model_node, versioned_model_patch)
+            self.manifest.rebuild_ref_lookup()  # TODO: replace with add_node calls
+
+    def _target_type(self) -> Type[UnparsedModelUpdate]:
+        return UnparsedModelUpdate
 
 
 class AnalysisPatchParser(NodePatchParser[UnparsedAnalysisUpdate]):
